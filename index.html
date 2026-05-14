@@ -2993,6 +2993,8 @@ const SHEETS_MAP = {
   info:     '專案資訊',
 };
 
+const CLIENT_ID = '463155721513-faab1nsjs4vjg6u2v19qmmccbcjsd7ij.apps.googleusercontent.com';
+
 let gAccessToken = null;
 let gUserProfile = null;
 
@@ -3003,7 +3005,7 @@ window.addEventListener('load', () => {
   // Initialize GIS token client for Sheets API
   if (typeof google === 'undefined') return;
   tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: document.getElementById('g_id_onload')?.dataset.clientId || '',
+    client_id: CLIENT_ID,
     scope: SCOPES,
     callback: onTokenReceived,
   });
