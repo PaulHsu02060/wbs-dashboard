@@ -1,0 +1,3175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>專案 WBS 儀表板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --ink-900: #0F1F33;
+    --ink-800: #1E3A5F;
+    --ink-700: #2D5687;
+    --ink-500: #5C7A9C;
+    --ink-400: #8AA0B8;
+    --ink-300: #B8C5D3;
+    --ink-200: #D8E0E8;
+    --ink-100: #EEF2F7;
+    --ink-50:  #F7F9FB;
+    --paper:   #FAFAF7;
+    --paper-2: #F5F3EE;
+    --warm:    #E07B39;
+    --warm-soft: #FBE8D9;
+    --warm-deep: #B85E27;
+    --green:   #2D8659;
+    --green-soft: #D7EBDF;
+    --amber:   #C49621;
+    --amber-soft: #FAEFC8;
+    --red:     #B53939;
+    --red-soft: #F5D9D9;
+    --grey:    #6B7785;
+    --grey-soft: #E5E8EC;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--paper);
+    color: var(--ink-900);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    font-weight: 400;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(30,58,95,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,58,95,0.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ============ HEADER ============ */
+  .topbar {
+    background: var(--ink-900);
+    color: #fff;
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 3px solid var(--warm);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo {
+    width: 38px; height: 38px;
+    background: var(--warm);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: "Noto Serif TC", serif;
+    font-weight: 900;
+    font-size: 22px;
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+  }
+  .brand-title {
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--ink-300);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: "Inter", sans-serif;
+    margin-top: 2px;
+  }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 18px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex; align-items: center; gap: 8px;
+    letter-spacing: 0.5px;
+  }
+  .btn-primary {
+    background: var(--warm);
+    color: #fff;
+    border-color: var(--warm);
+  }
+  .btn-primary:hover { background: var(--warm-deep); border-color: var(--warm-deep); }
+  .btn-ghost {
+    background: transparent;
+    color: #fff;
+    border-color: rgba(255,255,255,0.3);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+
+  /* ============ EMPTY STATE ============ */
+  .empty-wrap {
+    min-height: calc(100vh - 70px);
+    display: grid;
+    place-items: center;
+    padding: 60px 40px;
+    position: relative; z-index: 1;
+  }
+  .empty-card {
+    max-width: 720px;
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    padding: 60px 56px;
+    box-shadow: 0 1px 3px rgba(15,31,51,0.04), 0 12px 32px -8px rgba(15,31,51,0.08);
+    position: relative;
+  }
+  .empty-card::before {
+    content: "";
+    position: absolute; top: 0; left: 0;
+    width: 60px; height: 4px;
+    background: var(--warm);
+  }
+  .empty-eyebrow {
+    font-family: "Inter", sans-serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--warm);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  .empty-title {
+    font-family: "Noto Serif TC", serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink-900);
+    line-height: 1.3;
+    margin-bottom: 16px;
+  }
+  .empty-desc {
+    color: var(--ink-500);
+    font-size: 15px;
+    margin-bottom: 32px;
+    max-width: 540px;
+  }
+  .dropzone {
+    border: 2px dashed var(--ink-300);
+    background: var(--ink-50);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 24px;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--warm);
+    background: var(--warm-soft);
+  }
+  .dropzone-icon {
+    font-size: 36px;
+    color: var(--ink-400);
+    margin-bottom: 12px;
+  }
+  .dropzone-text {
+    font-size: 15px;
+    color: var(--ink-700);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .dropzone-hint {
+    font-size: 12px;
+    color: var(--ink-400);
+    font-family: "Inter", sans-serif;
+    letter-spacing: 0.5px;
+  }
+  .empty-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--ink-200);
+  }
+  .step {
+    padding-left: 16px;
+    border-left: 2px solid var(--warm);
+  }
+  .step-num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--warm);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .step-text {
+    font-size: 13px;
+    color: var(--ink-700);
+    line-height: 1.5;
+  }
+
+  /* ============ DASHBOARD ============ */
+  .dash {
+    padding: 32px 40px 80px;
+    max-width: 1480px;
+    margin: 0 auto;
+    position: relative; z-index: 1;
+    display: none;
+  }
+  .dash.active { display: block; }
+
+  /* Project meta header */
+  .project-header {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .project-header::before {
+    content: "";
+    position: absolute; top: 0; left: 0;
+    width: 80px; height: 4px;
+    background: var(--warm);
+  }
+  .ph-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .ph-eyebrow {
+    font-family: "Inter", sans-serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--warm);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .ph-title {
+    font-family: "Noto Serif TC", serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink-900);
+    line-height: 1.2;
+  }
+  .ph-subtitle {
+    color: var(--ink-500);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  .ph-updated {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-400);
+    letter-spacing: 1px;
+  }
+  .ph-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 20px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--ink-200);
+  }
+  .ph-meta-item .label {
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    color: var(--ink-400);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .ph-meta-item .value {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    color: var(--ink-900);
+    font-weight: 500;
+  }
+
+  /* KPI cards */
+  .section-title {
+    font-family: "Noto Serif TC", serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink-900);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .section-title::before {
+    content: "";
+    width: 4px;
+    height: 18px;
+    background: var(--warm);
+    display: inline-block;
+    transform: translateY(2px);
+  }
+  .section-title .en {
+    font-family: "Inter", sans-serif;
+    font-size: 11px;
+    color: var(--ink-400);
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .kpi {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    padding: 20px 20px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-label {
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    color: var(--ink-400);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .kpi-value {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--ink-900);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .kpi-unit {
+    font-size: 14px;
+    color: var(--ink-500);
+    margin-left: 4px;
+    font-weight: 400;
+  }
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--ink-500);
+    font-family: "Noto Sans TC", sans-serif;
+  }
+  .kpi-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--ink-200);
+  }
+  .kpi-bar-fill {
+    height: 100%;
+    background: var(--warm);
+    transition: width 0.6s ease;
+  }
+  .kpi.green .kpi-value { color: var(--green); }
+  .kpi.green .kpi-bar-fill { background: var(--green); }
+  .kpi.amber .kpi-value { color: var(--amber); }
+  .kpi.amber .kpi-bar-fill { background: var(--amber); }
+  .kpi.red .kpi-value { color: var(--red); }
+  .kpi.red .kpi-bar-fill { background: var(--red); }
+  .kpi.warm .kpi-value { color: var(--warm); }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 1000px) { .two-col { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    padding: 24px 24px 20px;
+  }
+  .panel h3 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink-900);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel h3 .count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-400);
+    font-weight: 500;
+  }
+
+  /* Phase progress */
+  .phase-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px 50px;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--ink-200);
+  }
+  .phase-row:last-child { border-bottom: none; }
+  .phase-name {
+    font-family: "Noto Serif TC", serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink-900);
+  }
+  .phase-bar {
+    height: 18px;
+    background: var(--ink-100);
+    position: relative;
+    overflow: hidden;
+  }
+  .phase-bar-fill {
+    height: 100%;
+    background: var(--ink-700);
+    transition: width 0.6s ease;
+  }
+  .phase-bar-fill.warm { background: var(--warm); }
+  .phase-bar-fill.green { background: var(--green); }
+  .phase-pct {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+    color: var(--ink-900);
+  }
+  .phase-count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-400);
+    text-align: right;
+  }
+
+  /* Department load */
+  .dept-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 80px;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--ink-200);
+  }
+  .dept-row:last-child { border-bottom: none; }
+  .dept-name {
+    font-family: "Inter", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-900);
+    letter-spacing: 1px;
+  }
+  .dept-bar {
+    height: 22px;
+    background: var(--ink-100);
+    display: flex;
+    overflow: hidden;
+  }
+  .dept-seg {
+    height: 100%;
+    transition: width 0.6s ease;
+  }
+  .dept-seg.done { background: var(--green); }
+  .dept-seg.doing { background: var(--ink-700); }
+  .dept-seg.todo { background: var(--ink-300); }
+  .dept-seg.delay { background: var(--red); }
+  .dept-seg.pause { background: var(--amber); }
+  .dept-count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-700);
+    text-align: right;
+  }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px 18px;
+    padding-top: 16px;
+    margin-top: 8px;
+    border-top: 1px dashed var(--ink-200);
+    font-size: 11px;
+    color: var(--ink-500);
+    font-family: "Inter", sans-serif;
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; display: inline-block; }
+
+  /* Risk panel */
+  .risk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 14px;
+  }
+  .risk-card {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    border-left: 4px solid var(--warm);
+    padding: 16px 18px;
+    position: relative;
+  }
+  .risk-card.danger { border-left-color: var(--red); }
+  .risk-card.warning { border-left-color: var(--amber); }
+  .risk-tag {
+    display: inline-block;
+    font-family: "Inter", sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .risk-tag.delay { background: var(--red-soft); color: var(--red); }
+  .risk-tag.note  { background: var(--warm-soft); color: var(--warm-deep); }
+  .risk-tag.over  { background: var(--amber-soft); color: var(--amber); }
+  .risk-task {
+    font-family: "Noto Serif TC", serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink-900);
+    margin-bottom: 4px;
+  }
+  .risk-task .wbs {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-400);
+    font-weight: 400;
+    margin-right: 6px;
+  }
+  .risk-desc {
+    font-size: 13px;
+    color: var(--ink-700);
+    line-height: 1.55;
+    margin-top: 6px;
+  }
+  .risk-meta {
+    display: flex; gap: 12px;
+    margin-top: 10px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: var(--ink-400);
+    letter-spacing: 1px;
+  }
+
+  /* Gantt */
+  .gantt-wrap {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    padding: 24px 24px 24px 0;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+  .gantt {
+    min-width: 900px;
+    position: relative;
+  }
+  .gantt-inner {
+    min-width: max-content;
+  }
+  .gantt-header {
+    display: grid;
+    border-bottom: 2px solid var(--ink-300);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+  }
+  .gantt-month {
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--ink-500);
+    text-align: center;
+    border-right: 1px dashed var(--ink-200);
+    padding: 4px 0;
+  }
+  .gantt-month:last-child { border-right: none; }
+  .gantt-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 0;
+    padding: 4px 0;
+    border-bottom: 1px dashed var(--ink-100);
+    align-items: center;
+    min-height: 30px;
+  }
+  .gantt-day-wrap .gantt-row {
+    grid-template-columns: 220px var(--gantt-track-width, 1fr);
+  }
+  .gantt-row:hover { background: var(--ink-50); }
+  .gantt-label {
+    font-size: 12px;
+    color: var(--ink-700);
+    padding-right: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gantt-label .wbs {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: var(--ink-400);
+    margin-right: 6px;
+  }
+  .gantt-track {
+    position: relative;
+    height: 22px;
+    background:
+      linear-gradient(90deg, var(--ink-100) 1px, transparent 1px) 0 0 / var(--month-w, 80px) 100%;
+  }
+  .gantt-bar {
+    position: absolute;
+    top: 4px;
+    height: 14px;
+    background: var(--ink-300);
+    border: 1px solid var(--ink-400);
+    overflow: hidden;
+  }
+  .gantt-bar-fill {
+    height: 100%;
+    background: var(--ink-700);
+  }
+  .gantt-bar.done .gantt-bar-fill { background: var(--green); }
+  .gantt-bar.delay { border-color: var(--red); }
+  .gantt-bar.delay .gantt-bar-fill { background: var(--red); }
+  .gantt-bar.todo .gantt-bar-fill { background: transparent; }
+  .gantt-today {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: var(--warm);
+    z-index: 5;
+  }
+  .gantt-today.with-label::after {
+    content: "TODAY";
+    position: absolute;
+    top: -20px;
+    left: -22px;
+    font-family: "Inter", sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--warm);
+    background: var(--paper);
+    padding: 1px 4px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .gantt-phase-divider {
+    grid-column: 1 / -1;
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--warm);
+    padding: 12px 0 4px;
+    border-bottom: 1px solid var(--ink-200);
+    margin-top: 8px;
+    font-weight: 700;
+  }
+  .gantt-phase-divider:first-child { margin-top: 0; }
+
+  /* Task list */
+  .list-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .search-box {
+    flex: 1; min-width: 220px;
+    padding: 9px 14px;
+    border: 1px solid var(--ink-300);
+    background: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink-900);
+  }
+  .search-box:focus { outline: none; border-color: var(--warm); }
+  .filter-select {
+    padding: 9px 12px;
+    border: 1px solid var(--ink-300);
+    background: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--ink-300);
+    background: #fff;
+  }
+  .view-toggle button {
+    padding: 9px 14px;
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--ink-500);
+    cursor: pointer;
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+  .view-toggle button.active {
+    background: var(--ink-900);
+    color: #fff;
+  }
+
+  .table-wrap {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    overflow-x: auto;
+  }
+  table.tasks {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.tasks th {
+    text-align: left;
+    padding: 12px 14px;
+    background: var(--ink-50);
+    border-bottom: 2px solid var(--ink-200);
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--ink-500);
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  table.tasks th:hover { color: var(--ink-900); }
+  table.tasks td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--ink-100);
+    vertical-align: middle;
+  }
+  table.tasks tr:hover td { background: var(--ink-50); }
+  table.tasks .wbs-code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-500);
+  }
+  table.tasks .task-name {
+    font-weight: 500;
+    color: var(--ink-900);
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 1px;
+  }
+  .tag.phase-規劃 { background: #E8F1FA; color: #1E5A8E; }
+  .tag.phase-設計 { background: #EEEBFA; color: #5D4D9E; }
+  .tag.phase-樣機 { background: #FAEFE0; color: #8B5A1E; }
+  .tag.phase-驗證 { background: #FAEBC8; color: #8B6914; }
+  .tag.phase-量產 { background: #DDF0E5; color: #1F6741; }
+  .tag.phase-上市 { background: #FBE0E0; color: #9C2929; }
+  .tag.phase-售後 { background: #E5E8EC; color: #4A5663; }
+
+  .tag.status-未開始 { background: var(--grey-soft); color: var(--grey); }
+  .tag.status-進行中 { background: #D6E4F3; color: var(--ink-700); }
+  .tag.status-已完成 { background: var(--green-soft); color: var(--green); }
+  .tag.status-延遲   { background: var(--red-soft); color: var(--red); }
+  .tag.status-暫停   { background: var(--amber-soft); color: var(--amber); }
+
+  .pri-high  { color: var(--red); font-weight: 700; }
+  .pri-mid   { color: var(--amber); font-weight: 600; }
+  .pri-low   { color: var(--ink-400); }
+
+  .prog-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+  }
+  .prog-mini-bar {
+    width: 60px;
+    height: 6px;
+    background: var(--ink-100);
+    position: relative;
+  }
+  .prog-mini-fill {
+    height: 100%;
+    background: var(--ink-700);
+  }
+  .prog-mini-fill.done { background: var(--green); }
+  .prog-mini-fill.late { background: var(--red); }
+
+  /* Kanban */
+  .kanban {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 1100px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px)  { .kanban { grid-template-columns: 1fr; } }
+  .kb-col {
+    background: var(--ink-50);
+    border-top: 3px solid var(--ink-700);
+    padding: 12px;
+    min-height: 200px;
+  }
+  .kb-col.s-未開始 { border-top-color: var(--grey); }
+  .kb-col.s-進行中 { border-top-color: var(--ink-700); }
+  .kb-col.s-已完成 { border-top-color: var(--green); }
+  .kb-col.s-延遲   { border-top-color: var(--red); }
+  .kb-col.s-暫停   { border-top-color: var(--amber); }
+  .kb-col-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .kb-col-title {
+    font-family: "Noto Serif TC", serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-900);
+  }
+  .kb-col-count {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-500);
+  }
+  .kb-card {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    cursor: default;
+    transition: transform 0.1s;
+  }
+  .kb-card:hover { transform: translateX(2px); border-color: var(--ink-400); }
+  .kb-card .wbs {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: var(--ink-400);
+  }
+  .kb-card .name {
+    font-weight: 500;
+    color: var(--ink-900);
+    margin: 2px 0 6px;
+    line-height: 1.4;
+  }
+  .kb-card .foot {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px;
+    color: var(--ink-500);
+  }
+  .kb-card .dept {
+    font-family: "Inter", sans-serif;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .kb-card .prog {
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  /* ============ Capacity Matrix ============ */
+  .cap-matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: #fff;
+  }
+  .cap-matrix th, .cap-matrix td {
+    border: 1px solid var(--ink-200);
+    padding: 10px 8px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .cap-matrix thead th {
+    background: var(--ink-50);
+    color: var(--ink-700);
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  .cap-matrix .cap-label {
+    background: var(--ink-50);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--ink-900);
+    text-align: left;
+    padding-left: 14px;
+  }
+  .cap-matrix .cap-label .model {
+    display: block;
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    color: var(--ink-400);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .cell-pill {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 500;
+    min-width: 70px;
+  }
+  .cell-pill.done { background: var(--green-soft); color: var(--green); }
+  .cell-pill.doing { background: #DCE6F2; color: var(--ink-700); }
+  .cell-pill.todo { background: var(--ink-100); color: var(--ink-500); }
+  .cell-pill.delay { background: var(--red-soft); color: var(--red); }
+  .cell-pill.pause { background: var(--amber-soft); color: var(--amber); }
+  .cell-pill .date {
+    display: block;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px;
+    margin-top: 2px;
+    opacity: 0.8;
+  }
+  .cell-empty {
+    color: var(--ink-300);
+    font-size: 11px;
+  }
+
+  /* ============ Sample Req Table ============ */
+  .sample-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: #fff;
+  }
+  .sample-table th, .sample-table td {
+    border: 1px solid var(--ink-200);
+    padding: 9px 10px;
+    text-align: center;
+  }
+  .sample-table thead th {
+    background: var(--ink-800);
+    color: #fff;
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .sample-table tr.total-row {
+    background: var(--ink-50);
+    font-weight: 700;
+    color: var(--ink-900);
+  }
+  .sample-table tr.total-row td {
+    border-top: 2px solid var(--ink-700);
+  }
+  .sample-table .phase-cell {
+    background: var(--ink-50);
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700;
+    text-align: left;
+    padding-left: 14px;
+    color: var(--ink-900);
+  }
+  .sample-table .num {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 500;
+  }
+  .sample-table .num.zero { color: var(--ink-300); }
+
+  /* ============ Materials Table ============ */
+  .mat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: #fff;
+  }
+  .mat-table th, .mat-table td {
+    border: 1px solid var(--ink-200);
+    padding: 9px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .mat-table thead th {
+    background: var(--ink-50);
+    color: var(--ink-700);
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .mat-table .cat {
+    background: var(--ink-50);
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700;
+    color: var(--ink-900);
+    text-align: left;
+    padding-left: 14px;
+  }
+  .mat-table .item {
+    text-align: left;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-700);
+  }
+  .mat-table .num {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 500;
+  }
+  .mat-table .gap-neg {
+    color: var(--red);
+    font-weight: 700;
+  }
+  .mat-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .mat-status.缺料 { background: var(--red-soft); color: var(--red); }
+  .mat-status.需備料 { background: var(--amber-soft); color: var(--amber); }
+  .mat-status.需增列 { background: #F4EBFF; color: #6941C6; }
+  .mat-status.已到料, .mat-status.已完成 { background: var(--green-soft); color: var(--green); }
+
+  /* ============ Certification Timeline ============ */
+  .cert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cert-row {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 110px 160px 1fr;
+    gap: 18px;
+    align-items: center;
+  }
+  .cert-row.mandatory { border-left: 4px solid var(--warm); }
+  .cert-row.voluntary { border-left: 4px solid var(--ink-500); }
+  .cert-cat {
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--ink-700);
+  }
+  .cert-cat .sub {
+    display: block;
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    color: var(--ink-400);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .cert-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-900);
+  }
+  .cert-name .id {
+    display: block;
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    color: var(--ink-400);
+    letter-spacing: 1px;
+    margin-top: 2px;
+    text-transform: uppercase;
+  }
+  .cert-timeline {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+  .cert-stop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 90px;
+    z-index: 1;
+  }
+  .cert-stop .dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--ink-300);
+    margin-bottom: 6px;
+  }
+  .cert-stop.done .dot { background: var(--green); border-color: var(--green); }
+  .cert-stop.today .dot { background: var(--warm); border-color: var(--warm); box-shadow: 0 0 0 3px var(--warm-soft); }
+  .cert-stop .label {
+    font-size: 11px;
+    color: var(--ink-700);
+    font-weight: 500;
+  }
+  .cert-stop .date {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: var(--ink-500);
+    margin-top: 2px;
+  }
+  .cert-stop.done .date, .cert-stop.today .date { color: var(--ink-700); }
+  .cert-line {
+    flex: 1;
+    height: 2px;
+    background: var(--ink-200);
+    margin: 0 0 18px 0;
+    align-self: center;
+  }
+  .cert-line.done { background: var(--green); }
+
+  /* error */
+  .error-msg {
+    background: var(--red-soft);
+    color: var(--red);
+    padding: 14px 20px;
+    margin-top: 16px;
+    font-size: 13px;
+    border-left: 4px solid var(--red);
+  }
+
+  /* utility */
+  .hidden { display: none !important; }
+  .footer-note {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--ink-400);
+    font-size: 11px;
+    font-family: "Inter", sans-serif;
+    letter-spacing: 2px;
+  }
+
+  /* loading */
+  .toast {
+    position: fixed;
+    top: 84px; right: 32px;
+    background: var(--ink-900);
+    color: #fff;
+    padding: 12px 20px;
+    font-size: 13px;
+    z-index: 200;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-left: 4px solid var(--green); }
+  .toast.error { border-left: 4px solid var(--red); }
+
+  .sample-table .subtotal-row td {
+    background: var(--ink-100);
+    font-weight: 700;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-800);
+    border-top: 1px solid var(--ink-300);
+  }
+  .sample-table .grand-total-row td {
+    background: var(--ink-900);
+    color: #fff;
+    font-weight: 700;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    border-top: 2px solid var(--warm);
+  }
+  .sample-table .grand-total-row .phase-cell { color: var(--warm); }
+
+  /* Material per-phase tables */
+  .mat-phase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding: 16px;
+  }
+  @media (max-width: 1200px) { .mat-phase-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 700px)  { .mat-phase-grid { grid-template-columns: 1fr; } }
+
+  .mat-phase-block {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    overflow: hidden;
+  }
+  .mat-phase-total {
+    grid-column: 1 / -1;
+  }
+  .mat-phase-header {
+    background: var(--ink-900);
+    padding: 10px 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    border-bottom: 2px solid var(--warm);
+  }
+  .mat-phase-label {
+    font-family: "Noto Serif TC", serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .mat-phase-en {
+    font-family: "Inter", sans-serif;
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    color: var(--warm);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .mat-row-missing td { background: var(--red-soft) !important; }
+  .mat-status {
+    display: inline-block;
+    font-family: "Inter", sans-serif;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    text-transform: uppercase;
+  }
+  .mat-status.mat-missing { background: var(--red-soft); color: var(--red); }
+  .mat-status.mat-ok      { background: var(--green-soft); color: var(--green); }
+  .mat-status.mat-zero    { background: var(--grey-soft); color: var(--grey); }
+
+  /* ===== Risk rows (clickable) ===== */
+  .risk-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 32px; }
+  .risk-row { border: 1px solid var(--ink-200); overflow: hidden; cursor: pointer; transition: box-shadow .15s; }
+  .risk-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .risk-row.danger { border-left: 4px solid var(--red); }
+  .risk-row.warning { border-left: 4px solid var(--warm); }
+  .risk-row.note { border-left: 4px solid var(--ink-300); }
+  .risk-row-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fff; }
+  .risk-badge { font-family: "Inter", sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; padding: 3px 8px; text-transform: uppercase; flex-shrink: 0; }
+  .risk-badge.danger { background: var(--red-soft); color: var(--red); }
+  .risk-badge.warning { background: var(--warm-soft); color: var(--warm-deep); }
+  .risk-badge.note { background: var(--grey-soft); color: var(--grey); }
+  .risk-wbs { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--ink-500); flex-shrink: 0; }
+  .risk-name { font-size: 13px; font-weight: 500; color: var(--ink-900); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .risk-row-meta { display: flex; gap: 12px; font-size: 11px; color: var(--ink-400); flex-shrink: 0; }
+  .risk-chevron { flex-shrink: 0; color: var(--ink-400); transition: transform .2s; }
+  .risk-detail { max-height: 0; overflow: hidden; transition: max-height .25s ease; background: var(--ink-50); border-top: 0px solid var(--ink-200); }
+  .risk-row.open .risk-detail { max-height: 400px; border-top: 1px solid var(--ink-200); }
+  .risk-row.open .risk-chevron { transform: rotate(180deg); }
+  .risk-detail-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; padding: 14px; }
+  .risk-detail-grid > div { display: flex; flex-direction: column; gap: 2px; }
+  .risk-detail-grid label { font-size: 9px; font-family: "Inter",sans-serif; letter-spacing: 1.5px; color: var(--ink-400); text-transform: uppercase; }
+  .risk-detail-grid span { font-size: 12px; color: var(--ink-800); }
+  .risk-detail-desc { padding: 0 14px 14px; }
+  .risk-detail-desc label { font-size: 9px; font-family: "Inter",sans-serif; letter-spacing: 1.5px; color: var(--ink-400); text-transform: uppercase; display: block; margin-bottom: 4px; }
+  .risk-detail-desc p { font-size: 12px; color: var(--ink-700); line-height: 1.6; }
+
+  /* ===== Gantt scale toggle ===== */
+  .gantt-scale-toggle { display: flex; border: 1px solid var(--ink-200); overflow: hidden; }
+  .gst-btn { padding: 5px 12px; border: none; background: none; cursor: pointer; font-size: 11px; font-family: "Inter",sans-serif; font-weight: 600; color: var(--ink-500); letter-spacing: 1px; transition: background .12s, color .12s; }
+  .gst-btn:hover { background: var(--ink-100); }
+  .gst-btn.active { background: var(--ink-900); color: #fff; }
+
+  /* ===== Gantt phase collapsible ===== */
+  .gantt-phase-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px 7px 8px;
+    background: var(--ink-900); color: #fff;
+    cursor: pointer; user-select: none; margin-top: 4px;
+    border-bottom: 2px solid var(--warm);
+  }
+  .gantt-phase-header:hover { background: var(--ink-800); }
+  .gantt-phase-chevron { flex-shrink: 0; transition: transform .2s; }
+  .gantt-phase-collapsed .gantt-phase-chevron { transform: rotate(-90deg); }
+  .gantt-phase-title { font-family: "Noto Serif TC", serif; font-size: 13px; font-weight: 700; flex: 1; }
+  .gantt-phase-dates { font-size: 10px; font-family: "Inter",sans-serif; color: var(--warm); letter-spacing: .5px; }
+  .gantt-phase-count { font-size: 10px; font-family: "Inter",sans-serif; color: var(--ink-400); }
+  .gantt-phase-body { overflow: hidden; transition: max-height .3s ease; max-height: 2000px; }
+  .gantt-phase-collapsed .gantt-phase-body { max-height: 0; }
+  .gantt-edit-btn {
+    width: 20px; height: 20px; border: none; background: none;
+    cursor: pointer; color: var(--ink-400); opacity: 0; transition: opacity .15s;
+    padding: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .gantt-row:hover .gantt-edit-btn { opacity: 1; }
+
+  /* ===== Task edit modal ===== */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(15,31,51,.45); z-index: 2000; display: flex; align-items: flex-start; justify-content: center; padding-top: 0; overflow-y: auto; }
+  .modal-box { background: #fff; width: 560px; max-width: 95vw; max-height: calc(100vh - 80px); overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); margin-bottom: 40px; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--ink-900); color: #fff; font-family: "Noto Serif TC",serif; font-size: 15px; font-weight: 700; border-bottom: 2px solid var(--warm); }
+  .modal-body { padding: 20px; }
+  .modal-grid { display: grid; grid-template-columns: 100px 1fr; gap: 10px 16px; align-items: center; }
+  .modal-grid label { font-size: 11px; color: var(--ink-500); font-family: "Inter",sans-serif; letter-spacing: .5px; }
+  .modal-grid input, .modal-grid select { padding: 6px 8px; border: 1px solid var(--ink-200); font-size: 12px; font-family: inherit; width: 100%; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--ink-200); background: var(--ink-50); }
+
+  /* ===== Task grouped list ===== */
+  .task-group { margin-bottom: 8px; border: 1px solid var(--ink-200); overflow: hidden; }
+  .task-group-header {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    background: var(--ink-900); color: #fff; cursor: pointer; user-select: none;
+    border-bottom: 2px solid var(--warm);
+  }
+  .task-group-header:hover { background: var(--ink-800); }
+  .task-group-title { font-family: "Noto Serif TC",serif; font-size: 13px; font-weight: 700; flex: 1; }
+  .task-group-count { font-family: "Inter",sans-serif; font-size: 10px; letter-spacing: 1.5px; color: var(--warm); }
+  .task-group-chevron { flex-shrink: 0; transition: transform .2s; }
+  .task-group.collapsed .task-group-chevron { transform: rotate(-90deg); }
+  .task-group-body { overflow: hidden; max-height: 3000px; transition: max-height .3s ease; }
+  .task-group.collapsed .task-group-body { max-height: 0; }
+  .task-group table.tasks { margin: 0; border: none; }
+  .task-group table.tasks thead tr th { background: var(--ink-100); border-top: none; }
+
+  /* ===== Cert collapsible items ===== */
+  .cert-section-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; background: var(--ink-900); color: #fff;
+    border-bottom: 2px solid var(--warm);
+  }
+  .cert-section-title { font-family: "Noto Serif TC",serif; font-size: 14px; font-weight: 700; flex: 1; }
+  .cert-section-range { font-family: "Inter",sans-serif; font-size: 11px; color: var(--warm); letter-spacing: .5px; }
+  .cert-section-count { font-family: "Inter",sans-serif; font-size: 10px; color: var(--ink-400); letter-spacing: 1.5px; }
+  .cert-item { border: 1px solid var(--ink-200); border-top: none; background: #fff; }
+  .cert-item-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; cursor: pointer; gap: 10px; }
+  .cert-item-header:hover { background: var(--ink-50); }
+  .cert-item-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .cert-item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .cert-chevron { flex-shrink: 0; color: var(--ink-400); transition: transform .2s; }
+  .cert-item.collapsed .cert-chevron { transform: rotate(-90deg); }
+  .cert-cat-badge { font-size: 9px; font-family: "Inter",sans-serif; font-weight: 700; letter-spacing: 1.5px; padding: 2px 7px; flex-shrink: 0; text-transform: uppercase; }
+  .cert-cat-badge.mand { background: var(--warm-soft); color: var(--warm-deep); }
+  .cert-cat-badge.vol { background: var(--grey-soft); color: var(--grey); }
+  .cert-item-name { font-size: 13px; font-weight: 500; color: var(--ink-900); }
+  .cert-item-range { font-size: 11px; font-family: "JetBrains Mono",monospace; color: var(--ink-400); }
+  .cert-prog-badge { font-size: 10px; font-family: "Inter",sans-serif; font-weight: 700; padding: 2px 8px; }
+  .cert-prog-badge.green { background: var(--green-soft); color: var(--green); }
+  .cert-prog-badge.warm { background: var(--warm-soft); color: var(--warm-deep); }
+  .cert-prog-badge.red { background: var(--red-soft); color: var(--red); }
+  .cert-prog-badge:not(.green):not(.warm):not(.red) { background: var(--ink-100); color: var(--ink-500); }
+  .cert-edit-btn { width: 22px; height: 22px; border: none; background: none; cursor: pointer; color: var(--ink-400); padding: 0; display: flex; align-items: center; justify-content: center; }
+  .cert-edit-btn:hover { color: var(--ink-700); }
+  .cert-item-body { overflow: hidden; max-height: 0; transition: max-height .25s ease; background: var(--ink-50); }
+  .cert-item:not(.collapsed) .cert-item-body { max-height: 300px; border-top: 1px solid var(--ink-200); }
+  .cert-item-body .cert-timeline { padding: 16px 20px; }
+  .cert-item-note { padding: 0 20px 14px; font-size: 11px; color: var(--ink-500); font-style: italic; }
+  /* ===== Gantt day view sticky labels ===== */
+  .gantt-sticky-label {
+    position: sticky; left: 0; background: #fff; z-index: 10;
+    box-shadow: 2px 0 4px rgba(0,0,0,.06);
+  }
+  .gantt-row:hover .gantt-sticky-label { background: var(--ink-50); }
+
+  /* ===== Collapsible section ===== */
+  .collapsible-section { margin: 32px 0 12px; }
+  .collapsible-section.collapsed { margin-bottom: 12px; }
+  .collapsible-header {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    padding: 6px 0; user-select: none;
+  }
+  .collapsible-header:hover .collapsible-chevron { color: var(--warm); }
+  .collapsible-chevron { color: var(--ink-400); transition: transform .2s; flex-shrink: 0; }
+  .collapsible-section.collapsed .collapsible-chevron { transform: rotate(-90deg); }
+  .collapsible-body { transition: none; }
+
+  /* ===== Gantt day header vertical ===== */
+  .gantt-month[style*="writing-mode"] {
+    display: flex; align-items: flex-start; justify-content: center;
+    height: 50px; line-height: 1;
+  }
+</style>
+  <!-- Google Identity Services (OAuth2) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </div>
+    <div class="brand-title">專案 WBS 儀表板</div>
+  </div>
+  <div class="topbar-actions">
+    <div id="user-pill" style="display:none;align-items:center;gap:8px;padding:4px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);cursor:pointer;" onclick="signOut()" title="點此登出">
+      <img id="user-avatar" src="" style="width:22px;height:22px;border-radius:50%;display:none;">
+      <span id="user-name" style="font-size:11px;color:#B8CAE0;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#8BA0BA;flex-shrink:0;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </div>
+    <button class="btn btn-ghost" id="btn-sync-sheets" style="display:none;" onclick="syncFromSheets()" title="從 Google Sheets 更新最新資料">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      <span id="sync-label">同步 Sheets</span>
+    </button>
+    <button class="btn btn-ghost" id="btn-export-excel" title="匯出目前儀表板狀態為 Excel" style="display:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      匯出 Excel
+    </button>
+    <button class="btn btn-primary" id="btn-google-signin">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z"/></svg>
+      Google 登入
+    </button>
+    <button class="btn btn-ghost" id="btn-upload" style="display:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      匯入 Excel
+    </button>
+    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden>
+  </div>
+</header>
+
+<!-- ============ EMPTY STATE ============ -->
+<div class="empty-wrap" id="empty-state">
+  <div class="empty-card">
+    <div class="empty-eyebrow">— PROJECT WBS DASHBOARD</div>
+    <h1 class="empty-title" id="empty-title">用 Google 帳號登入，<br>即時查看專案進度。</h1>
+    <p class="empty-desc" id="empty-desc">
+      登入後儀表板自動從 Google Sheets 載入最新資料，無需匯入任何檔案。<br>
+      <span style="font-size:11px;color:var(--ink-400);">或使用下方「匯入 Excel」手動載入。</span>
+    </p>
+    <!-- Google Sign-In button (rendered by GIS) -->
+    <div id="g_id_onload"
+         data-client_id="463155721513-faab1nsjs4vjg6u2v19qmmccbcjsd7ij.apps.googleusercontent.com"
+         data-callback="handleGoogleSignIn"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"
+         data-theme="outline"
+         data-text="signin_with"
+         data-shape="rectangular"
+         data-logo_alignment="left"
+         style="margin: 24px 0 8px;">
+    </div>
+    <p style="font-size:11px;color:var(--ink-400);margin-bottom:20px;">登入後資料僅供查看，不會修改 Google Sheets 原始資料</p>
+    <div style="border-top:1px solid var(--ink-200);padding-top:20px;margin-top:8px;">
+      <p style="font-size:11px;color:var(--ink-400);margin-bottom:12px;">— 或使用 Excel 手動匯入 —</p>
+    </div>
+    <div class="dropzone" id="dropzone">
+      <div class="dropzone-icon">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="dropzone-text">把 Excel 拖進來,或點此選擇檔案</div>
+      <div class="dropzone-hint">支援 .xlsx / .xls / .csv</div>
+    </div>
+    <div class="empty-steps">
+      <div class="step">
+        <div class="step-num">01 / STEP</div>
+        <div class="step-text">準備好你的專案 Excel 檔（含 WBS 任務等分頁）</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02 / STEP</div>
+        <div class="step-text">在「WBS 任務」分頁填寫各部門任務,儲存為 .xlsx</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03 / STEP</div>
+        <div class="step-text">把 Excel 拖回來,自動產出完整的專案儀表板</div>
+      </div>
+    </div>
+    <div id="empty-error"></div>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<main class="dash" id="dash">
+
+  <!-- Project header -->
+  <section class="project-header">
+    <div class="ph-top">
+      <div>
+        <div class="ph-eyebrow">— Active Project</div>
+        <h1 class="ph-title" id="ph-title">專案名稱</h1>
+        <div class="ph-subtitle" id="ph-subtitle">載入 Excel 後自動帶入專案資訊</div>
+      </div>
+      <div class="ph-updated" id="ph-updated">UPDATED · 2026-05-13</div>
+    </div>
+    <div class="ph-meta" id="ph-meta"></div>
+  </section>
+
+  <!-- KPI -->
+  <h2 class="section-title">本月概覽 <span class="en">Overview</span></h2>
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- Phase + Department -->
+  <div class="two-col">
+    <div class="panel">
+      <h3>階段進度 <span class="count" id="phase-count"></span></h3>
+      <div id="phase-list"></div>
+    </div>
+    <div class="panel">
+      <h3>部門負荷 <span class="count" id="dept-count"></span></h3>
+      <div id="dept-list"></div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>已完成</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--ink-700)"></span>進行中</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>延遲</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>暫停</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--ink-300)"></span>未開始</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Capacity Matrix -->
+  <h2 class="section-title">各能力測試進度 <span class="en">Capability Test Progress</span></h2>
+  <div class="panel" style="padding: 0; overflow-x: auto;">
+    <div id="cap-matrix-wrap"></div>
+  </div>
+
+  <!-- Sample requirements -->
+  <div class="collapsible-section collapsed" id="sec-sample">
+    <div class="collapsible-header" onclick="toggleSection('sec-sample')">
+      <svg class="collapsible-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="section-title" style="margin:0;">各階段樣機需求 <span class="en">Sample Requirement</span></span>
+    </div>
+    <div class="collapsible-body" style="display:none;">
+      <div class="panel" style="padding: 0; overflow-x: auto;">
+        <div id="sample-req-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Materials -->
+  <div class="collapsible-section collapsed" id="sec-materials">
+    <div class="collapsible-header" onclick="toggleSection('sec-materials')">
+      <svg class="collapsible-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      <span class="section-title" style="margin:0;">物料備料狀況 <span class="en">Materials & Stock</span></span>
+    </div>
+    <div class="collapsible-body" style="display:none;">
+      <div class="panel" style="padding: 0; overflow-x: auto;">
+        <div id="materials-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Certifications -->
+  <h2 class="section-title">商檢認證時程 <span class="en">Certification Timeline</span></h2>
+  <div id="certs-wrap" style="margin-bottom: 32px;"></div>
+  <!-- Risks -->
+  <h2 class="section-title">風險議題 <span class="en">Risks & Blockers</span></h2>
+  <div id="risk-area" style="margin-bottom: 32px;"></div>
+
+  <!-- Gantt -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:32px 0 12px;">
+    <h2 class="section-title" style="margin:0;">時程甘特 <span class="en">Gantt</span></h2>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="gantt-scale-toggle" id="gantt-scale-toggle">
+        <button class="gst-btn active" data-scale="month" onclick="setGanttScale('month')">月</button>
+        <button class="gst-btn" data-scale="day" onclick="setGanttScale('day')">日</button>
+        <button class="gst-btn" data-scale="year" onclick="setGanttScale('year')">年</button>
+      </div>
+      <button class="btn btn-ghost" style="padding:6px 10px;" onclick="expandAllGantt()" title="展開所有階段">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="gantt-wrap">
+    <div class="gantt" id="gantt"></div>
+  </div>
+
+  <!-- Task list -->
+  <h2 class="section-title">任務清單 <span class="en">Task List</span></h2>
+  <div class="list-controls">
+    <input type="text" class="search-box" id="search" placeholder="搜尋任務名稱、負責人、WBS 編號...">
+    <select class="filter-select" id="filter-phase"><option value="">所有階段</option></select>
+    <select class="filter-select" id="filter-status"><option value="">所有狀態</option></select>
+    <select class="filter-select" id="filter-dept"><option value="">所有部門</option></select>
+    <div class="view-toggle">
+      <button id="view-table" class="active">清單</button>
+      <button id="view-kanban">看板</button>
+    </div>
+  </div>
+  <div class="table-wrap" id="task-table-wrap">
+    <div id="task-grouped"></div>
+  </div>
+  <div class="kanban hidden" id="kanban"></div>
+
+  <div class="footer-note">— END OF DASHBOARD —</div>
+</main>
+
+  <!-- Cert edit modal -->
+  <div id="cert-edit-modal" class="modal-backdrop" style="display:none;" onclick="closeCertModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span id="cert-modal-title">編輯認證</span>
+        <button onclick="closeCertModal()" style="background:none;border:none;cursor:pointer;color:var(--ink-400);">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <label>認證類別</label><input id="ce-category" readonly style="background:var(--ink-100);">
+          <label>標章名稱</label><input id="ce-mark">
+          <label>提出日期</label><input id="ce-submit" type="date">
+          <label>中間檢核</label><input id="ce-middle" type="date">
+          <label>取得日期</label><input id="ce-obtain" type="date">
+          <label>進度 (%)</label><input id="ce-progress" type="number" min="0" max="100">
+          <label>狀態</label>
+          <select id="ce-status"><option>未開始</option><option>進行中</option><option>已完成</option><option>延遲</option></select>
+        </div>
+        <div style="margin-top:12px;">
+          <label style="font-size:11px;color:var(--ink-500);display:block;margin-bottom:4px;">備註</label>
+          <textarea id="ce-note" rows="2" style="width:100%;padding:6px;border:1px solid var(--ink-200);font-size:12px;resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeCertModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveCertEdit()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Task edit modal -->
+  <div id="task-edit-modal" class="modal-backdrop" style="display:none;" onclick="closeTaskModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span id="modal-title">編輯任務</span>
+        <button onclick="closeTaskModal()" style="background:none;border:none;cursor:pointer;color:var(--ink-400);">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <label>WBS</label><input id="me-wbs" readonly style="background:var(--ink-100);">
+          <label>任務名稱</label><input id="me-name">
+          <label>階段</label><input id="me-phase">
+          <label>部門</label><input id="me-dept">
+          <label>負責人</label><input id="me-owner">
+          <label>預計開始日</label><input id="me-start" type="date">
+          <label>預計結束日</label><input id="me-end" type="date">
+          <label>實際開始日</label><input id="me-actual-start" type="date">
+          <label>實際完成日</label><input id="me-actual-end" type="date">
+          <label>工作天數</label><input id="me-wd" type="number" min="0">
+          <label>進度 (%)</label><input id="me-progress" type="number" min="0" max="100" placeholder="留空自動計算">
+          <label>狀態</label>
+          <select id="me-status">
+            <option>未開始</option><option>進行中</option><option>已完成</option><option>延遲</option><option>暫停</option>
+          </select>
+          <label>優先級</label>
+          <select id="me-priority"><option>高</option><option>中</option><option>低</option></select>
+        </div>
+        <div style="margin-top:12px;">
+          <label style="font-size:11px;color:var(--ink-500);display:block;margin-bottom:4px;">風險議題</label>
+          <textarea id="me-risk" rows="2" style="width:100%;padding:6px;border:1px solid var(--ink-200);font-size:12px;resize:vertical;"></textarea>
+        </div>
+        <div style="margin-top:8px;">
+          <label style="font-size:11px;color:var(--ink-500);display:block;margin-bottom:4px;">備註</label>
+          <textarea id="me-note" rows="2" style="width:100%;padding:6px;border:1px solid var(--ink-200);font-size:12px;resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeTaskModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveTaskEdit()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =================================================================
+   Embedded Excel template (base64)
+================================================================= */
+const TEMPLATE_B64 = "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";
+
+/* =================================================================
+   State
+================================================================= */
+const state = {
+  tasks: [],
+  projectInfo: {},
+  capacityTests: [],
+  sampleReq: [],
+  materials: [],
+  certs: [],
+  sortKey: "wbs",
+  sortAsc: true,
+  filters: { phase: "", status: "", dept: "", search: "" },
+  view: "table",
+};
+
+const PHASE_ORDER = ["設計討論", "手工機", "性試 (DVT)", "商檢", "量試", "量產", "另案"];
+const CAPACITY_ORDER = [2.9, 3.6, 4.1, 5.2, 6.3, 7.3];
+const CAP_PHASE_ORDER = ["手工機", "性試 (DVT)", "量試", "量產"];
+const STATUS_ORDER = ["未開始", "進行中", "已完成", "延遲", "暫停"];
+
+/* =================================================================
+   Helpers
+================================================================= */
+function toast(msg, type = "success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => t.className = "toast " + type, 2400);
+}
+
+function parseDate(v) {
+  if (!v) return null;
+  if (v instanceof Date) return v;
+  // Excel serial number
+  if (typeof v === "number") {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return isNaN(d) ? null : d;
+  }
+  // String
+  const s = String(v).trim();
+  if (!s) return null;
+  // try ISO / YYYY-MM-DD / YYYY/MM/DD
+  const m = s.match(/(\d{4})[-\/\.年](\d{1,2})[-\/\.月](\d{1,2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+function fmtDate(d) {
+  if (!d || !(d instanceof Date) || isNaN(d)) return "—";
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function daysBetween(a, b) {
+  return Math.round((b - a) / 86400000);
+}
+
+function todayMidnight() {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+
+/* =================================================================
+   File upload
+================================================================= */
+const fileInput = document.getElementById("file-input");
+const dropzone = document.getElementById("dropzone");
+
+document.getElementById("btn-upload").addEventListener("click", () => fileInput.click());
+dropzone.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+["dragover", "dragenter"].forEach(ev => {
+  dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add("dragover"); });
+});
+["dragleave", "drop"].forEach(ev => {
+  dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove("dragover"); });
+});
+dropzone.addEventListener("drop", e => {
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+
+function showError(msg) {
+  const el = document.getElementById("empty-error");
+  el.innerHTML = `<div class="error-msg">⚠ ${msg}</div>`;
+}
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: "array", cellDates: true });
+      parseWorkbook(wb);
+    } catch (err) {
+      console.error(err);
+      showError("讀取檔案失敗:" + err.message);
+    }
+  };
+  reader.onerror = () => showError("檔案讀取失敗");
+  reader.readAsArrayBuffer(file);
+}
+
+function parseWorkbook(wb) {
+  // Find WBS sheet
+  const wbsSheetName = wb.SheetNames.find(n => n.includes("WBS")) || wb.SheetNames[0];
+  const ws = wb.Sheets[wbsSheetName];
+  if (!ws) { showError("找不到 WBS 任務分頁"); return; }
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: false, dateNF: "yyyy-mm-dd" });
+  // Re-read as raw for dates
+  const raw = XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
+
+  const tasks = [];
+  rows.forEach((r, i) => {
+    const get = (keys) => {
+      for (const k of keys) {
+        for (const key of Object.keys(r)) {
+          if (key.replace(/\s/g, "") === k.replace(/\s/g, "")) return r[key];
+        }
+      }
+      return "";
+    };
+    const getRaw = (keys) => {
+      for (const k of keys) {
+        for (const key of Object.keys(raw[i] || {})) {
+          if (key.replace(/\s/g, "") === k.replace(/\s/g, "")) return raw[i][key];
+        }
+      }
+      return "";
+    };
+    const name = String(get(["任務名稱", "Task", "name"]) || "").trim();
+    if (!name) return;
+    const t = {
+      wbs: String(get(["WBS編號", "WBS"]) || "").trim() || `T${i+1}`,
+      phase: String(get(["階段", "Phase"]) || "").trim(),
+      name,
+      dept: String(get(["負責部門", "部門", "Dept"]) || "").trim(),
+      owner: String(get(["負責人", "Owner"]) || "").trim(),
+      start: parseDate(getRaw(["預計開始日", "開始日", "Start"])),
+      actualStart: parseDate(getRaw(["實際開始日", "ActualStart"])),
+      end: parseDate(getRaw(["預計結束日", "結束日", "End"])),
+      actualEnd: parseDate(getRaw(["實際完成日", "ActualEnd"])),
+      progress: Math.max(0, Math.min(100, Number(String(get(["進度", "Progress"]) || 0).replace(/%/g,"")) || 0)),
+      status: String(get(["狀態", "Status"]) || "未開始").trim(),
+      priority: String(get(["優先級", "Priority"]) || "").trim(),
+      risk: String(get(["風險議題", "Risk"]) || "").trim(),
+      note: String(get(["備註", "Note"]) || "").trim(),
+    };
+    tasks.push(t);
+  });
+
+  if (!tasks.length) { showError("沒有讀到任何任務,請檢查 WBS 任務分頁是否有資料"); return; }
+
+  // Parse project info sheet
+  const infoSheetName = wb.SheetNames.find(n => n.includes("專案") || n.toLowerCase().includes("info")) || null;
+  const info = {};
+  if (infoSheetName) {
+    const infoRows = XLSX.utils.sheet_to_json(wb.Sheets[infoSheetName], { header: 1, defval: "" });
+    infoRows.forEach(row => {
+      if (row.length >= 2 && row[0] && row[1] && String(row[0]).trim() !== "欄位") {
+        info[String(row[0]).trim()] = row[1] instanceof Date
+          ? fmtDate(row[1])
+          : String(row[1]).trim();
+      }
+    });
+  }
+
+  // === 容量內測 ===
+  const capacityTests = [];
+  const capSheet = wb.SheetNames.find(n => n.includes("內測") || n.includes("容量"));
+  if (capSheet) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[capSheet], { defval: "", raw: false });
+    const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[capSheet], { defval: "", raw: true });
+    rows.forEach((r, i) => {
+      const getC = (keys) => {
+        for (const k of keys) for (const key of Object.keys(r))
+          if (key.replace(/\s/g,"") === k.replace(/\s/g,"")) return r[key];
+        return "";
+      };
+      const getRawC = (keys) => {
+        for (const k of keys) for (const key of Object.keys(rawRows[i] || {}))
+          if (key.replace(/\s/g,"") === k.replace(/\s/g,"")) return rawRows[i][key];
+        return "";
+      };
+      const cap = Number(getC(["容量 (kW)", "容量(kW)", "容量"]));
+      const phase = String(getC(["階段"]) || "").trim();
+      if (!cap || !phase) return;
+      capacityTests.push({
+        capacity: cap,
+        model: String(getC(["機型"]) || "").trim(),
+        phase,
+        start: parseDate(getRawC(["預計開始日"])),
+        end: parseDate(getRawC(["預計結束日"])),
+        actualEnd: parseDate(getRawC(["實際完成日"])),
+        progress: Math.max(0, Math.min(100, Number(String(getC(["進度"])||0).replace(/%/g,"")) || 0)),
+        status: String(getC(["狀態"]) || "未開始").trim(),
+        owner: String(getC(["負責人"]) || "").trim(),
+        note: String(getC(["備註"]) || "").trim(),
+      });
+    });
+  }
+
+  // === 樣機需求 ===
+  const sampleReq = [];
+  const sampleSheet = wb.SheetNames.find(n => n.includes("樣機"));
+  if (sampleSheet) {
+    const arr = XLSX.utils.sheet_to_json(wb.Sheets[sampleSheet], { header: 1, defval: "" });
+    if (arr.length > 1) {
+      const headers = arr[0].map(h => String(h).trim());
+      for (let i = 1; i < arr.length; i++) {
+        const row = arr[i];
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = row[idx]);
+        const phase = String(obj["階段"] || "").trim();
+        const unit = String(obj["需求單位"] || "").trim();
+        if (phase || unit) {
+          sampleReq.push({
+            phase: phase || "全階段總計",
+            unit: unit || "總需求數量",
+            counts: CAPACITY_ORDER.map(c => {
+              const v = obj[`${c}kW`];
+              if (v === undefined || v === null || v === "" || v === "-") return null;
+              const n = Number(v);
+              return isNaN(n) ? null : n;
+            }),
+            note: String(obj["備註"] || "").trim(),
+          });
+        }
+      }
+    }
+  }
+
+  // === 物料備料 ===
+  const materials = [];
+  const matSheet = wb.SheetNames.find(n => n.includes("物料") || n.includes("備料"));
+  if (matSheet) {
+    const mrows = XLSX.utils.sheet_to_json(wb.Sheets[matSheet], { defval: "", raw: true });
+    mrows.forEach(r => {
+      const getM = (keys) => {
+        for (const k of keys) for (const key of Object.keys(r))
+          if (key.replace(/\s+/g,"") === k.replace(/\s+/g,"")) return r[key];
+        return "";
+      };
+      const cat = String(getM(["物料分類"]) || "").trim();
+      const part = String(getM(["料號/廠商", "料號"]) || "").trim();
+      if (!cat && !part) return;
+      const toNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+      const total = toNum(getM(["各階段總需求", "總需求量"]));
+      const stock = toNum(getM(["廠內庫存"]));
+      const shortage = toNum(getM(["尚缺"]));
+      materials.push({
+        category: cat,
+        part,
+        scope: String(getM(["適用機型"]) || "").trim(),
+        // Per-phase quantities
+        hm: toNum(getM(["手工機小計"])),
+        cm: toNum(getM(["商檢機"])),
+        dvt: toNum(getM(["性試小計"])),
+        pt: toNum(getM(["量試小計"])),
+        mp: toNum(getM(["量產小計"])),
+        total,
+        stock,
+        shortage,
+        status: String(getM(["狀態", "Status"]) || "").trim(),
+        note: String(getM(["備註", "Note"]) || "").trim(),
+      });
+    });
+  }
+    // === 商檢時程 ===
+  const certs = [];
+  const certSheet = wb.SheetNames.find(n => n.includes("商檢"));
+  if (certSheet) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[certSheet], { defval: "", raw: false });
+    const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[certSheet], { defval: "", raw: true });
+    rows.forEach((r, i) => {
+      const getC = (keys) => {
+        for (const k of keys) for (const key of Object.keys(r))
+          if (key.replace(/\s/g,"") === k.replace(/\s/g,"")) return r[key];
+        return "";
+      };
+      const getRawC = (keys) => {
+        for (const k of keys) for (const key of Object.keys(rawRows[i] || {}))
+          if (key.replace(/\s/g,"") === k.replace(/\s/g,"")) return rawRows[i][key];
+        return "";
+      };
+      const mark = String(getC(["標章"]) || "").trim();
+      if (!mark) return;
+      certs.push({
+        category: String(getC(["認證類別"]) || "").trim(),
+        mark,
+        submit: parseDate(getRawC(["提出日期"])),
+        middle: parseDate(getRawC(["中間檢核"])),
+        obtain: parseDate(getRawC(["取得日期"])),
+        progress: Math.max(0, Math.min(100, Number(String(getC(["進度"])||0).replace(/%/g,"")) || 0)),
+        status: String(getC(["狀態"]) || "未開始").trim(),
+        note: String(getC(["備註"]) || "").trim(),
+      });
+    });
+  }
+
+  state.tasks = tasks;
+  state.projectInfo = info;
+  state.capacityTests = capacityTests;
+  state.sampleReq = sampleReq;
+  state.materials = materials;
+  state.certs = certs;
+  renderDashboard();
+  toast(`匯入成功 · ${tasks.length} 項任務 · ${capacityTests.length} 容量排程 · ${materials.length} 物料 · ${certs.length} 認證`);
+}
+
+/* =================================================================
+   Render
+================================================================= */
+function toggleSection(id) {
+  const sec = document.getElementById(id);
+  sec.classList.toggle("collapsed");
+  const body = sec.querySelector(".collapsible-body");
+  body.style.display = sec.classList.contains("collapsed") ? "none" : "";
+}
+
+function renderDashboard() {
+  document.getElementById("empty-state").style.display = "none";
+  document.getElementById("dash").classList.add("active");
+  renderProjectHeader();
+  renderKPI();
+  renderPhase();
+  renderDept();
+  renderCapacityMatrix();
+  renderSampleReq();
+  renderMaterials();
+  renderCerts();
+  renderRisks();
+  renderGantt();
+  populateFilters();
+  renderTaskList();
+  renderKanban();
+}
+
+/* =================================================================
+   Excel Export
+================================================================= */
+document.getElementById("btn-export-excel").addEventListener("click", exportToExcel);
+
+function dateToSerial(d) {
+  if (!d || !(d instanceof Date) || isNaN(d)) return "";
+  return Math.floor((d - new Date(Date.UTC(1899, 11, 30))) / 86400000);
+}
+
+function exportToExcel() {
+  try {
+    const wb = XLSX.utils.book_new();
+
+    // === WBS 任務 ===
+    const wbsHeaders = ["WBS 編號","階段","任務名稱","負責部門","負責人","預計開始日","工作天數","實際開始日","預計結束日","實際完成日","進度","狀態","優先級","風險議題","備註"];
+    const wbsData = [wbsHeaders, ...state.tasks.map(t => [
+      t.wbs, t.phase, t.name, t.dept, t.owner,
+      t.start ? dateToSerial(t.start) : "",
+      t.workdays || "",
+      t.actualStart ? dateToSerial(t.actualStart) : "",
+      t.end ? dateToSerial(t.end) : "",
+      t.actualEnd ? dateToSerial(t.actualEnd) : "",
+      t.progress, t.status, t.priority, t.risk, t.note
+    ])];
+    const wsWBS = XLSX.utils.aoa_to_sheet(wbsData);
+    // Format date columns
+    [5, 7, 8, 9].forEach(c => {
+      for (let r = 2; r <= wbsData.length; r++) {
+        const ref = XLSX.utils.encode_cell({r: r-1, c: c});
+        if (wsWBS[ref] && wsWBS[ref].v) {
+          wsWBS[ref].t = "n";
+          wsWBS[ref].z = "YYYY-MM-DD";
+        }
+      }
+    });
+    XLSX.utils.book_append_sheet(wb, wsWBS, "WBS 任務");
+
+    // === 內測時程 ===
+    if (state.capacityTests.length) {
+      const capHeaders = ["容量 (kW)","機型","階段","預計開始日","工作天數","實際開始日","預計結束日","實際完成日","進度","狀態","負責人","備註"];
+      const capData = [capHeaders, ...state.capacityTests.map(c => [
+        c.capacity, c.model, c.phase,
+        c.start ? dateToSerial(c.start) : "",
+        "",
+        "",
+        c.end ? dateToSerial(c.end) : "",
+        c.actualEnd ? dateToSerial(c.actualEnd) : "",
+        c.progress, c.status, c.owner, c.note
+      ])];
+      const wsCap = XLSX.utils.aoa_to_sheet(capData);
+      XLSX.utils.book_append_sheet(wb, wsCap, "內測時程");
+    }
+
+    // === 樣機需求 ===
+    if (state.sampleReq.length) {
+      const capCols = [2.9,3.6,4.1,5.2,6.3,7.3];
+      const srHeaders = ["階段","需求單位",...capCols.map(c => c+"kW"),"備註"];
+      const srData = [srHeaders, ...state.sampleReq.map(r => [
+        r.phase, r.unit, ...r.counts.map(v => v === null ? "" : v), r.note
+      ])];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(srData), "樣機需求");
+    }
+
+    // === 物料備料 ===
+    if (state.materials.length) {
+      const matHeaders = ["物料分類","料號/廠商","適用機型","手工機(開發)","手工機(品管)","手工機小計","商檢機","性試(開發)","性試(品管)","性試小計","量試(品管)","量試小計","量產(品管)","量產小計","各階段總需求","廠內庫存","尚缺","狀態","備註"];
+      const matData = [matHeaders, ...state.materials.map(m => [
+        m.category, m.part, m.scope,
+        "", "", m.hm, m.cm, "", "", m.dvt, "", m.pt, "", m.mp,
+        m.total, m.stock || "", m.shortage || "", m.status, m.note
+      ])];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matData), "物料備料");
+    }
+
+    // === 商檢時程 ===
+    if (state.certs.length) {
+      const certHeaders = ["認證類別","標章","提出日期","工作天數","實際提出日","中間檢核","取得日期","進度","狀態","備註"];
+      const certData = [certHeaders, ...state.certs.map(c => [
+        c.category, c.mark,
+        c.submit ? dateToSerial(c.submit) : "",
+        "",
+        "",
+        c.middle ? dateToSerial(c.middle) : "",
+        c.obtain ? dateToSerial(c.obtain) : "",
+        c.progress, c.status, c.note
+      ])];
+      const wsCert = XLSX.utils.aoa_to_sheet(certData);
+      XLSX.utils.book_append_sheet(wb, wsCert, "商檢時程");
+    }
+
+    const ts = new Date();
+    const fname = `J系列WBS_匯出_${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,"0")}${String(ts.getDate()).padStart(2,"0")}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    toast(`已匯出 ${fname}`);
+  } catch(e) {
+    toast("匯出失敗: " + e.message, "error");
+  }
+}
+
+function renderProjectHeader() {
+  const info = state.projectInfo;
+  if (info["專案名稱"]) document.getElementById("ph-title").textContent = info["專案名稱"];
+  const sub = [info["專案代號"], info["性試容量範圍"], info["產品線"]].filter(Boolean).join(" · ");
+  if (sub) document.getElementById("ph-subtitle").textContent = sub;
+  const upd = info["最後更新"] || fmtDate(new Date());
+  document.getElementById("ph-updated").textContent = `UPDATED · ${upd}`;
+
+  const metaKeys = ["專案經理", "性試 (DVT) 結束日", "量試結束日", "量產結束日", "預計可販日", "另案開發"];
+  const html = metaKeys
+    .filter(k => info[k])
+    .map(k => `<div class="ph-meta-item"><div class="label">${k}</div><div class="value">${info[k]}</div></div>`)
+    .join("");
+  document.getElementById("ph-meta").innerHTML = html;
+}
+
+function renderKPI() {
+  const t = state.tasks;
+  const today = todayMidnight();
+  const done = t.filter(x => x.status === "已完成").length;
+  const doing = t.filter(x => x.status === "進行中").length;
+  const overdue = t.filter(x => x.end && x.end < today && x.progress < 100).length;
+  const delayed = t.filter(x => x.status === "延遲" || (x.end && x.end < today && x.progress < 100)).length;
+  const overall = Math.round(t.reduce((s, x) => s + x.progress, 0) / Math.max(1, t.length));
+  const todo = t.filter(x => x.status === "未開始").length;
+  const maxEnd = t.reduce((m, x) => x.end && x.end > m ? x.end : m, new Date(0));
+  const daysLeft = maxEnd.getFullYear() > 1970 ? daysBetween(today, maxEnd) : null;
+
+  const kpis = [
+    { label: "TASKS", value: t.length, unit: "件", sub: "WBS 總任務數", cls: "" },
+    { label: "DONE", value: done, unit: "件", sub: `占 ${Math.round(done/t.length*100)}%`, cls: "green", pct: done/t.length*100 },
+    { label: "IN-PROGRESS", value: doing, unit: "件", sub: `占 ${Math.round(doing/t.length*100)}%`, cls: "warm", pct: doing/t.length*100 },
+    { label: "DELAYED", value: delayed, unit: "件", sub: delayed > 0 ? "需優先排除" : "目前無延遲", cls: delayed > 0 ? "red" : "green", pct: delayed/t.length*100 },
+    { label: "OVERALL", value: overall, unit: "%", sub: "整體加權進度", cls: overall >= 70 ? "green" : overall >= 40 ? "amber" : "red", pct: overall },
+    { label: "DAYS LEFT", value: daysLeft !== null ? Math.max(0, daysLeft) : "—", unit: daysLeft !== null ? "天" : "", sub: daysLeft !== null ? `截至 ${fmtDate(maxEnd)}` : "未設結案日", cls: daysLeft !== null && daysLeft < 30 ? "warm" : "" },
+  ];
+
+  document.getElementById("kpi-grid").innerHTML = kpis.map(k => `
+    <div class="kpi ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}<span class="kpi-unit">${k.unit}</span></div>
+      <div class="kpi-sub">${k.sub}</div>
+      ${k.pct !== undefined ? `<div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(100, k.pct)}%"></div></div>` : ""}
+    </div>
+  `).join("");
+}
+
+function renderPhase() {
+  const groups = {};
+  state.tasks.forEach(t => {
+    const p = t.phase || "未分類";
+    if (!groups[p]) groups[p] = [];
+    groups[p].push(t);
+  });
+  const order = [...PHASE_ORDER, ...Object.keys(groups).filter(p => !PHASE_ORDER.includes(p))];
+  const phases = order.filter(p => groups[p]);
+
+  document.getElementById("phase-count").textContent = `${phases.length} 個階段`;
+  document.getElementById("phase-list").innerHTML = phases.map(p => {
+    const list = groups[p];
+    const avg = Math.round(list.reduce((s, x) => s + x.progress, 0) / list.length);
+    const cls = avg >= 100 ? "green" : avg >= 60 ? "" : avg >= 30 ? "warm" : "warm";
+    return `
+      <div class="phase-row">
+        <div class="phase-name">${p}</div>
+        <div class="phase-bar"><div class="phase-bar-fill ${cls}" style="width:${avg}%"></div></div>
+        <div class="phase-pct">${avg}%</div>
+        <div class="phase-count">${list.length} 件</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDept() {
+  const groups = {};
+  state.tasks.forEach(t => {
+    const d = t.dept || "未指派";
+    if (!groups[d]) groups[d] = { done: 0, doing: 0, todo: 0, delay: 0, pause: 0, total: 0 };
+    groups[d].total++;
+    const today = todayMidnight();
+    if (t.status === "已完成") groups[d].done++;
+    else if (t.status === "延遲" || (t.end && t.end < today && t.progress < 100)) groups[d].delay++;
+    else if (t.status === "暫停") groups[d].pause++;
+    else if (t.status === "進行中") groups[d].doing++;
+    else groups[d].todo++;
+  });
+
+  const depts = Object.entries(groups).sort((a, b) => b[1].total - a[1].total);
+  document.getElementById("dept-count").textContent = `${depts.length} 個部門`;
+  document.getElementById("dept-list").innerHTML = depts.map(([name, g]) => {
+    const seg = (n, cls) => n > 0 ? `<div class="dept-seg ${cls}" style="width:${n/g.total*100}%" title="${cls} ${n}"></div>` : "";
+    return `
+      <div class="dept-row">
+        <div class="dept-name">${name}</div>
+        <div class="dept-bar">
+          ${seg(g.done, "done")}${seg(g.doing, "doing")}${seg(g.delay, "delay")}${seg(g.pause, "pause")}${seg(g.todo, "todo")}
+        </div>
+        <div class="dept-count">${g.total} 件</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderCapacityMatrix() {
+  const wrap = document.getElementById("cap-matrix-wrap");
+  if (!state.capacityTests.length) {
+    wrap.innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-400);font-size:13px;">「容量內測」分頁無資料</div>`;
+    return;
+  }
+  // index by capacity → phase
+  const idx = {};
+  const modelByCap = {};
+  state.capacityTests.forEach(c => {
+    if (!idx[c.capacity]) idx[c.capacity] = {};
+    idx[c.capacity][c.phase] = c;
+    if (c.model && !modelByCap[c.capacity]) modelByCap[c.capacity] = c.model;
+  });
+  const caps = CAPACITY_ORDER.filter(c => idx[c]);
+  const phases = CAP_PHASE_ORDER;
+  const today = todayMidnight();
+
+  const statusClass = (c) => {
+    if (!c) return "empty";
+    if (c.status === "已完成" || c.progress >= 100) return "done";
+    if (c.status === "延遲") return "delay";
+    if (c.status === "暫停") return "pause";
+    if (c.status === "進行中" || c.progress > 0) return "doing";
+    if (c.end && c.end < today) return "delay";
+    return "todo";
+  };
+  const statusText = (c) => {
+    if (!c) return "—";
+    if (c.status === "已完成") return "已完成";
+    if (c.status === "延遲") return "延遲";
+    if (c.status === "暫停") return "暫停";
+    if (c.status === "進行中") return `進行中 ${c.progress}%`;
+    return "未開始";
+  };
+
+  let html = `<table class="cap-matrix"><thead><tr><th style="text-align:left;padding-left:14px;">容量機型</th>`;
+  phases.forEach(p => html += `<th>${p}</th>`);
+  html += `</tr></thead><tbody>`;
+
+  caps.forEach(cap => {
+    html += `<tr><td class="cap-label">${cap} kW<span class="model">${modelByCap[cap] || ""}</span></td>`;
+    phases.forEach(p => {
+      const c = idx[cap]?.[p];
+      const cls = statusClass(c);
+      if (!c) {
+        html += `<td><span class="cell-empty">—</span></td>`;
+      } else {
+        const txt = statusText(c);
+        const dateText = c.end ? fmtDate(c.end) : "未排程";
+        html += `<td><span class="cell-pill ${cls}">${txt}<span class="date">${dateText}</span></span></td>`;
+      }
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  wrap.innerHTML = html;
+}
+
+function renderSampleReq() {
+  const wrap = document.getElementById("sample-req-wrap");
+  if (!state.sampleReq.length) {
+    wrap.innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-400);font-size:13px;">「樣機需求」分頁無資料</div>`;
+    return;
+  }
+
+  let html = `<table class="sample-table"><thead><tr><th style="text-align:left;padding-left:14px;">階段</th><th>需求單位</th>`;
+  CAPACITY_ORDER.forEach(c => html += `<th>${c}kW</th>`);
+  html += `<th style="text-align:left;padding-left:14px;">備註</th></tr></thead><tbody>`;
+
+  state.sampleReq.forEach(r => {
+    const isSubtotal = r.unit === "小計";
+    const isGrandTotal = r.phase === "全階段總計" || r.unit === "總需求數量";
+    const rowCls = isGrandTotal ? "grand-total-row" : isSubtotal ? "subtotal-row" : "";
+    html += `<tr class="${rowCls}">`;
+    html += `<td class="phase-cell">${r.phase}</td>`;
+    html += `<td>${r.unit}</td>`;
+    r.counts.forEach(v => {
+      const isEmpty = (v === "" || v === "-" || v === null || v === undefined);
+      const num = isEmpty ? 0 : Number(v);
+      html += `<td class="num ${isEmpty || num === 0 ? "zero" : ""}">${isEmpty || num === 0 ? "—" : num}</td>`;
+    });
+    html += `<td style="text-align:left;padding-left:14px;font-size:11px;color:var(--ink-500);">${r.note || ""}</td>`;
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  wrap.innerHTML = html;
+}
+
+function renderMaterials() {
+  const wrap = document.getElementById("materials-wrap");
+  if (!state.materials.length) {
+    wrap.innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-400);font-size:13px;">「物料備料」分頁無資料</div>`;
+    return;
+  }
+
+  // Phase definitions for multi-table display
+  const phases = [
+    { key: "hm",  label: "手工機",      en: "PROTOTYPE" },
+    { key: "cm",  label: "商檢機",      en: "CERT SAMPLE" },
+    { key: "dvt", label: "性試 (DVT)",  en: "DVT" },
+    { key: "pt",  label: "量試",        en: "PILOT RUN" },
+    { key: "mp",  label: "量產",        en: "MASS PROD" },
+  ];
+
+  const matGroups = {};
+  state.materials.forEach(m => {
+    if (!matGroups[m.category]) matGroups[m.category] = [];
+    matGroups[m.category].push(m);
+  });
+
+  // Build per-phase tables
+  let allHtml = `<div class="mat-phase-grid">`;
+
+  phases.forEach(ph => {
+    allHtml += `<div class="mat-phase-block">
+      <div class="mat-phase-header">
+        <span class="mat-phase-label">${ph.label}</span>
+        <span class="mat-phase-en">${ph.en}</span>
+      </div>
+      <table class="mat-table">
+        <thead><tr>
+          <th style="text-align:left;padding-left:10px;">物料</th>
+          <th style="text-align:left;padding-left:6px;font-size:10px;">料號/廠商</th>
+          <th>需求</th>
+          <th>庫存</th>
+          <th>缺口</th>
+          <th>狀態</th>
+        </tr></thead>
+        <tbody>`;
+
+    state.materials.forEach(m => {
+      const need = m[ph.key] || 0;
+      const stock = m.stock || 0;
+      // Shortage: only relevant if need > 0; use overall stock ratio
+      // Simple: if stock < total, prorate per phase
+      let phaseShortage = 0;
+      if (m.total > 0 && need > 0) {
+        const stockRatio = Math.max(0, stock) / m.total;
+        const phaseStock = Math.floor(stockRatio * need);
+        phaseShortage = need - phaseStock;
+      }
+      const isMissing = phaseShortage > 0 && stock < m.total;
+      const isOk = need === 0 || !isMissing;
+      const statusCls = need === 0 ? "mat-zero" : isMissing ? "mat-missing" : "mat-ok";
+      const statusIcon = need === 0 ? "—" : isMissing ? "缺料" : "足量";
+      allHtml += `<tr class="${isMissing && need > 0 ? "mat-row-missing" : ""}">
+        <td class="mat-cat" style="text-align:left;padding-left:10px;">${m.category}</td>
+        <td class="mat-part" style="text-align:left;padding-left:6px;font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${m.part}">${m.part}</td>
+        <td class="mat-num">${need > 0 ? need : "—"}</td>
+        <td class="mat-num">${m.stock !== undefined && m.stock !== null && m.stock !== "" ? m.stock : "—"}</td>
+        <td class="mat-num ${isMissing && need > 0 ? "shortage" : ""}">${need === 0 ? "—" : (isMissing ? -phaseShortage : "✓")}</td>
+        <td><span class="mat-status ${statusCls}">${statusIcon}</span></td>
+      </tr>`;
+    });
+
+    allHtml += `</tbody></table></div>`;
+  });
+
+  allHtml += `</div>`;
+  wrap.innerHTML = allHtml;
+}
+
+
+function openCertEdit(idx) {
+  const c = state.certs[idx];
+  if (!c) return;
+  state._editingCertIdx = idx;
+  document.getElementById("ce-category").value = c.category;
+  document.getElementById("ce-mark").value = c.mark;
+  document.getElementById("ce-submit").value = c.submit ? fmtDate(c.submit) : "";
+  document.getElementById("ce-middle").value = c.middle ? fmtDate(c.middle) : "";
+  document.getElementById("ce-obtain").value = c.obtain ? fmtDate(c.obtain) : "";
+  document.getElementById("ce-progress").value = c.progress;
+  document.getElementById("ce-status").value = c.status;
+  document.getElementById("ce-note").value = c.note || "";
+  document.getElementById("cert-modal-title").textContent = "編輯認證 · " + c.mark;
+  document.getElementById("cert-edit-modal").style.display = "flex";
+}
+function closeCertModal(e) {
+  if (e && e.target !== document.getElementById("cert-edit-modal")) return;
+  document.getElementById("cert-edit-modal").style.display = "none";
+}
+function saveCertEdit() {
+  const idx = state._editingCertIdx;
+  const c = state.certs[idx];
+  if (!c) return;
+  c.mark = document.getElementById("ce-mark").value;
+  const sv = document.getElementById("ce-submit").value;
+  const mv = document.getElementById("ce-middle").value;
+  const ov = document.getElementById("ce-obtain").value;
+  c.submit = sv ? new Date(sv) : null;
+  c.middle = mv ? new Date(mv) : null;
+  c.obtain = ov ? new Date(ov) : null;
+  c.progress = Math.max(0, Math.min(100, +document.getElementById("ce-progress").value || 0));
+  c.status = document.getElementById("ce-status").value;
+  c.note = document.getElementById("ce-note").value;
+  document.getElementById("cert-edit-modal").style.display = "none";
+  renderCerts();
+  toast("已更新 " + c.mark);
+}
+
+function renderCerts() {
+  const wrap = document.getElementById("certs-wrap");
+  if (!state.certs.length) {
+    wrap.innerHTML = `<div style="padding:20px;text-align:center;color:var(--ink-400);font-size:13px;">「商檢時程」分頁無資料</div>`;
+    return;
+  }
+  const today = todayMidnight();
+
+  // Compute overall date range for header
+  const allDates = state.certs.flatMap(c => [c.submit, c.obtain].filter(Boolean));
+  const minDate = allDates.length ? new Date(Math.min(...allDates.map(d => d.getTime()))) : null;
+  const maxDate = allDates.length ? new Date(Math.max(...allDates.map(d => d.getTime()))) : null;
+  const headerRange = (minDate && maxDate) ? fmtDate(minDate) + " ～ " + fmtDate(maxDate) : "";
+
+  if (!state.certCollapse) state.certCollapse = {};
+
+  let html = `<div class="cert-section-header">
+    <span class="cert-section-title">認證進度總覽</span>
+    <span class="cert-section-range">${headerRange}</span>
+    <span class="cert-section-count">${state.certs.length} 項認證</span>
+  </div>`;
+  html += `<div class="cert-list">`;
+
+  state.certs.forEach((c, idx) => {
+    const cls = c.category === "強制性" ? "mandatory" : "voluntary";
+    const isCollapsed = !(state.certCollapse[idx] === false); // default collapsed
+    const stops = [
+      { label: "提出", date: c.submit },
+      c.middle ? { label: "廠驗", date: c.middle } : null,
+      { label: "取得", date: c.obtain },
+    ].filter(Boolean);
+    let lastDoneIdx = -1;
+    stops.forEach((s, i) => { if (s.date && s.date <= today) lastDoneIdx = i; });
+
+    const statusCls = c.status === "已完成" ? "green" : c.status === "延遲" ? "red" : c.status === "進行中" ? "warm" : "";
+    const safeMark = c.mark.replace(/'/g, "\'");
+
+    html += `<div class="cert-item ${isCollapsed ? "collapsed" : ""}">`;
+    // Header row (always visible, click to toggle)
+    html += `<div class="cert-item-header" onclick="toggleCert(${idx})">
+      <div class="cert-item-left">
+        <svg class="cert-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        <span class="cert-cat-badge ${cls === "mandatory" ? "mand" : "vol"}">${c.category}</span>
+        <span class="cert-item-name">${c.mark}</span>
+      </div>
+      <div class="cert-item-right">
+        <span class="cert-item-range">${fmtDate(c.submit)} ～ ${fmtDate(c.obtain)}</span>
+        <span class="cert-prog-badge ${statusCls}">${c.progress}%</span>
+        <button class="cert-edit-btn" onclick="event.stopPropagation();openCertEdit(${idx})" title="編輯">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </div>
+    </div>`;
+    // Detail body (collapsed by default)
+    html += `<div class="cert-item-body">
+      <div class="cert-timeline">`;
+    stops.forEach((s, i) => {
+      const isDone = i <= lastDoneIdx;
+      const isFinal = (i === stops.length - 1 && s.date && s.date <= today);
+      html += `<div class="cert-stop ${isDone || isFinal ? "done" : ""}">
+        <div class="dot"></div>
+        <div class="label">${s.label}</div>
+        <div class="date">${fmtDate(s.date)}</div>
+      </div>`;
+      if (i < stops.length - 1) {
+        html += `<div class="cert-line ${i < lastDoneIdx ? "done" : ""}"></div>`;
+      }
+    });
+    html += `</div>`;
+    if (c.note) html += `<div class="cert-item-note">${c.note}</div>`;
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+function toggleCert(idx) {
+  if (!state.certCollapse) state.certCollapse = {};
+  const wasExpanded = state.certCollapse[idx] === false;
+  state.certCollapse[idx] = wasExpanded ? true : false;
+  renderCerts();
+}
+
+function renderRisks() {
+  const today = todayMidnight();
+  // Urgency order: 逾期(0) > 延遲(1) > 進行中(2) > 未開始(3)
+  const urgencyScore = (t) => {
+    if (t.end && t.end < today && t.progress < 100) return 0; // 逾期
+    if (t.status === "延遲") return 1;                         // 延遲(手動)
+    if (t.status === "進行中") return 2;                        // 進行中
+    return 3;                                                   // 未開始
+  };
+  const urgencyLabel = (score) => ["逾期","延遲","進行中","未開始"][score];
+  const urgencyClass = (score) => ["danger","danger","warning","note"][score];
+
+  const risks = state.tasks
+    .map(t => {
+      const score = urgencyScore(t);
+      const hasRisk = !!t.risk;
+      if (!hasRisk && score >= 3) return null;    // only show if has risk or is urgent
+      if (!hasRisk && !t.end) return null;
+      // Include: has risk OR is overdue OR is delayed
+      const isOverdue = score === 0;
+      const isDelay = t.status === "延遲" || score === 1;
+      if (!hasRisk && !isOverdue && !isDelay) return null;
+      return { task: t, score, hasRisk, isOverdue, isDelay };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.score - b.score || a.task.wbs.localeCompare(b.task.wbs));
+
+  const area = document.getElementById("risk-area");
+  if (!risks.length) {
+    area.innerHTML = `<div style="padding:20px;background:var(--green-soft);color:var(--green);font-size:13px;border-left:4px solid var(--green);">✓ 目前沒有風險議題,所有任務進度都在掌握中</div>`;
+    return;
+  }
+
+  const html = `
+    <div class="risk-list" id="risk-list">
+      ${risks.map((r, idx) => {
+        const label = urgencyLabel(r.score);
+        const cls = urgencyClass(r.score);
+        let desc = r.task.risk || "";
+        if (r.isOverdue && !desc) desc = `截止日 ${fmtDate(r.task.end)} 已過，目前進度僅 ${r.task.progress}%`;
+        else if (r.isDelay && !desc) desc = "任務狀態標記為延遲，需排除阻礙";
+        return `<div class="risk-row ${cls}" data-idx="${idx}" onclick="toggleRiskDetail(this)">
+          <div class="risk-row-header">
+            <span class="risk-badge ${cls}">${label}</span>
+            <span class="risk-wbs">${r.task.wbs}</span>
+            <span class="risk-name">${r.task.name}</span>
+            <div class="risk-row-meta">
+              <span>${r.task.owner || "—"}</span>
+              <span>${fmtDate(r.task.end)}</span>
+              <span>${r.task.progress}%</span>
+            </div>
+            <button class="cert-edit-btn" onclick="event.stopPropagation();openTaskEdit('${r.task.wbs}')" title="編輯" style="margin-left:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <svg class="risk-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="risk-detail">
+            <div class="risk-detail-grid">
+              <div><label>部門</label><span>${r.task.dept || "—"}</span></div>
+              <div><label>負責人</label><span>${r.task.owner || "—"}</span></div>
+              <div><label>優先級</label><span>${r.task.priority || "—"}</span></div>
+              <div><label>狀態</label><span>${r.task.status}</span></div>
+              <div><label>預計開始</label><span>${fmtDate(r.task.start)}</span></div>
+              <div><label>截止日</label><span>${fmtDate(r.task.end)}</span></div>
+              <div><label>實際開始</label><span>${fmtDate(r.task.actualStart)}</span></div>
+              <div><label>實際完成</label><span>${fmtDate(r.task.actualEnd)}</span></div>
+              <div><label>進度</label><span>${r.task.progress}%</span></div>
+            </div>
+            ${desc ? `<div class="risk-detail-desc"><label>風險議題</label><p>${desc}</p></div>` : ""}
+            ${r.task.note ? `<div class="risk-detail-desc"><label>備註</label><p>${r.task.note}</p></div>` : ""}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  area.innerHTML = html;
+}
+
+function toggleRiskDetail(el) {
+  el.classList.toggle("open");
+}
+
+
+// Gantt state
+const ganttState = { scale: "month", collapsed: {} };
+
+
+function setGanttScale(scale) {
+  ganttState.scale = scale;
+  document.querySelectorAll(".gst-btn").forEach(b => b.classList.toggle("active", b.dataset.scale === scale));
+  renderGantt();
+}
+
+function expandAllGantt() {
+  Object.keys(ganttState.collapsed).forEach(k => delete ganttState.collapsed[k]);
+  renderGantt();
+}
+
+function toggleGanttPhase(phase) {
+  ganttState.collapsed[phase] = !ganttState.collapsed[phase];
+  renderGantt();
+}
+
+function openTaskEdit(wbsId) {
+  const t = state.tasks.find(x => x.wbs === wbsId);
+  if (!t) return;
+  state._editingWbs = wbsId;
+  document.getElementById("me-wbs").value = t.wbs;
+  document.getElementById("me-name").value = t.name;
+  document.getElementById("me-phase").value = t.phase;
+  document.getElementById("me-dept").value = t.dept;
+  document.getElementById("me-owner").value = t.owner;
+  document.getElementById("me-start").value = t.start ? fmtDate(t.start) : "";
+  document.getElementById("me-end").value = t.end ? fmtDate(t.end) : "";
+  document.getElementById("me-actual-start").value = t.actualStart ? fmtDate(t.actualStart) : "";
+  document.getElementById("me-actual-end").value = t.actualEnd ? fmtDate(t.actualEnd) : "";
+  document.getElementById("me-wd").value = t.workdays || "";
+  document.getElementById("me-progress").value = t.progress;
+  document.getElementById("me-status").value = t.status;
+  document.getElementById("me-priority").value = t.priority || "中";
+  document.getElementById("me-risk").value = t.risk;
+  document.getElementById("me-note").value = t.note;
+  document.getElementById("modal-title").textContent = "編輯 " + t.wbs + " · " + t.name;
+  document.getElementById("task-edit-modal").style.display = "flex";
+}
+
+function closeTaskModal(e) {
+  if (e && e.target !== document.getElementById("task-edit-modal")) return;
+  document.getElementById("task-edit-modal").style.display = "none";
+}
+
+function saveTaskEdit() {
+  const wbs = state._editingWbs;
+  const t = state.tasks.find(x => x.wbs === wbs);
+  if (!t) return;
+  t.name = document.getElementById("me-name").value;
+  t.phase = document.getElementById("me-phase").value;
+  t.dept = document.getElementById("me-dept").value;
+  t.owner = document.getElementById("me-owner").value;
+  const sv = document.getElementById("me-start").value;
+  const ev = document.getElementById("me-end").value;
+  const asv = document.getElementById("me-actual-start").value;
+  const aev = document.getElementById("me-actual-end").value;
+  t.start = sv ? new Date(sv) : null;
+  t.end = ev ? new Date(ev) : null;
+  t.actualStart = asv ? new Date(asv) : null;
+  t.actualEnd = aev ? new Date(aev) : null;
+  // Auto-calculate progress from actualStart + end date
+  if (t.actualEnd || (t.actualEnd === null && document.getElementById("me-progress").value !== "")) {
+    if (t.actualEnd) {
+      t.progress = 100;
+    } else if (t.actualStart && t.end) {
+      const today2 = todayMidnight();
+      const total = daysBetween(t.actualStart, t.end);
+      const elapsed = daysBetween(t.actualStart, today2);
+      t.progress = total > 0 ? Math.min(100, Math.max(0, Math.round(elapsed / total * 100))) : 0;
+    } else {
+      t.progress = Math.max(0, Math.min(100, +document.getElementById("me-progress").value || 0));
+    }
+  } else {
+    t.progress = Math.max(0, Math.min(100, +document.getElementById("me-progress").value || 0));
+  }
+  t.status = document.getElementById("me-status").value;
+  t.priority = document.getElementById("me-priority").value;
+  t.risk = document.getElementById("me-risk").value;
+  t.note = document.getElementById("me-note").value;
+  document.getElementById("task-edit-modal").style.display = "none";
+  renderDashboard();
+  toast("已更新 " + t.wbs);
+}
+
+function renderGantt() {
+  const tasks = state.tasks.filter(t => t.start && t.end);
+  if (!tasks.length) {
+    document.getElementById("gantt").innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-400);font-size:13px;">沒有任務有完整的起訖日期，無法繪製甘特圖</div>';
+    return;
+  }
+  let minD = new Date(Math.min(...tasks.map(t => t.start.getTime())));
+  let maxD = new Date(Math.max(...tasks.map(t => t.end.getTime())));
+  const scale = ganttState.scale;
+
+  if (scale === "month") {
+    minD = new Date(minD.getFullYear(), minD.getMonth(), 1);
+    maxD = new Date(maxD.getFullYear(), maxD.getMonth() + 1, 0);
+  } else if (scale === "year") {
+    minD = new Date(minD.getFullYear(), 0, 1);
+    maxD = new Date(maxD.getFullYear(), 11, 31);
+  } else {
+    minD = new Date(minD.getFullYear(), minD.getMonth(), minD.getDate());
+    maxD = new Date(maxD.getFullYear(), maxD.getMonth(), maxD.getDate());
+  }
+
+  const totalDays = daysBetween(minD, maxD) + 1;
+
+  // Build timeline headers
+  const headerItems = [];
+  if (scale === "year") {
+    let y = minD.getFullYear();
+    while (y <= maxD.getFullYear()) {
+      const yStart = new Date(y, 0, 1);
+      const yEnd = new Date(y, 11, 31);
+      const w = daysBetween(new Date(Math.max(minD, yStart)), new Date(Math.min(maxD.getTime(), yEnd.getTime()))) + 1;
+      headerItems.push({ label: String(y), pct: w / totalDays * 100 });
+      y++;
+    }
+  } else if (scale === "day") {
+    let cur = new Date(minD);
+    while (cur <= maxD) {
+      const isWknd = cur.getDay() === 0 || cur.getDay() === 6;
+      headerItems.push({ label: (cur.getMonth()+1) + "/" + cur.getDate(), pct: 1 / totalDays * 100, isWeekend: isWknd });
+      cur.setDate(cur.getDate() + 1);
+    }
+  } else {
+    let cur = new Date(minD.getFullYear(), minD.getMonth(), 1);
+    while (cur <= maxD) {
+      const me = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+      const days = daysBetween(cur, me) + 1;
+      headerItems.push({ label: cur.getFullYear() + "." + String(cur.getMonth()+1).padStart(2,"0"), pct: days / totalDays * 100 });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+  }
+
+  // Group tasks by phase
+  const groups = {};
+  state.tasks.forEach(t => {
+    const p = t.phase || "未分類";
+    if (!groups[p]) groups[p] = [];
+    groups[p].push(t);
+  });
+  const order = [...PHASE_ORDER, ...Object.keys(groups).filter(p => !PHASE_ORDER.includes(p))];
+  const phases = order.filter(p => groups[p]);
+
+  const today = todayMidnight();
+  const todayPct = today >= minD && today <= maxD ? daysBetween(minD, today) / totalDays * 100 : null;
+
+  const headerHtml = headerItems.map(h =>
+    '<div class="gantt-month' + (h.isWeekend ? ' weekend' : '') + '" style="width:' + h.pct + '%;min-width:' + (scale === 'day' ? 28 : 40) + 'px;' + (scale === 'day' ? 'writing-mode:vertical-rl;font-size:9px;padding:2px 0;' : '') + '">' + h.label + '</div>'
+  ).join("");
+
+  // Day view: compute explicit pixel width for track
+  const dayTrackWidth = scale === 'day' ? Math.max(800, totalDays * 28) : null;
+  const trackW = dayTrackWidth ? 'width:' + dayTrackWidth + 'px;' : '';
+
+  let html = '<div class="gantt-inner">'
+    + '<div class="gantt-row" style="border-bottom:2px solid var(--ink-300);min-height:auto;padding:0 0 6px;">'
+    + '<div class="gantt-label gantt-sticky-label" style="font-family:\'Inter\',sans-serif;font-size:10px;letter-spacing:2px;color:var(--ink-500);">TASK</div>'
+    + '<div class="gantt-header" style="display:flex;' + (dayTrackWidth ? 'width:' + dayTrackWidth + 'px;min-width:' + dayTrackWidth + 'px;' : '') + '">' + headerHtml + '</div>'
+    + '</div>';
+
+  const editIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+
+  phases.forEach(p => {
+    const pTasks = groups[p];
+    const isCollapsed = !!ganttState.collapsed[p];
+    const validTasks = pTasks.filter(t => t.start && t.end);
+    const pStart = validTasks.length ? validTasks.reduce((m, t) => t.start < m ? t.start : m, validTasks[0].start) : null;
+    const pEnd = validTasks.length ? validTasks.reduce((m, t) => t.end > m ? t.end : m, validTasks[0].end) : null;
+    const dateRange = (pStart && pEnd) ? fmtDate(pStart) + " ～ " + fmtDate(pEnd) : "";
+    const pId = "gp-" + p.replace(/[^a-zA-Z0-9]/g, "_");
+    const safeP = p.replace(/'/g, "\\'");
+
+    html += '<div class="gantt-phase-wrap' + (isCollapsed ? " gantt-phase-collapsed" : "") + '" id="' + pId + '">'
+      + '<div class="gantt-phase-header" onclick="toggleGanttPhase(\'' + safeP + '\')">'
+      + '<svg class="gantt-phase-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>'
+      + '<span class="gantt-phase-title">' + p + '</span>'
+      + '<span class="gantt-phase-dates">' + dateRange + '</span>'
+      + '<span class="gantt-phase-count">' + pTasks.length + ' 件</span>'
+      + '</div>'
+      + '<div class="gantt-phase-body">';
+
+    pTasks.forEach(t => {
+      const safeWbs = t.wbs.replace(/'/g, "\\'");
+      const editBtn = '<button class="gantt-edit-btn" onclick="event.stopPropagation();openTaskEdit(\'' + safeWbs + '\')" title="編輯">' + editIcon + '</button>';
+      if (!t.start || !t.end) {
+        html += '<div class="gantt-row">'
+          + '<div class="gantt-label' + (scale === 'day' ? ' gantt-sticky-label' : '') + '"><span class="wbs">' + t.wbs + '</span>' + t.name + editBtn + '</div>'
+          + '<div class="gantt-track" style="' + trackW + '"><span style="font-size:10px;color:var(--ink-300);padding-left:8px;line-height:22px;">(無時程)</span></div>'
+          + '</div>';
+        return;
+      }
+      const startPct = Math.max(0, daysBetween(minD, t.start) / totalDays * 100);
+      const widthPct = Math.max(0.3, daysBetween(t.start, t.end) / totalDays * 100);
+      const isDelay = t.status === "延遲" || (t.end < today && t.progress < 100);
+      const isDone = t.status === "已完成" || t.progress >= 100;
+      const cls = isDelay ? "delay" : isDone ? "done" : "todo";
+      const todayLine = todayPct !== null ? '<div class="gantt-today" style="left:' + todayPct + '%;"></div>' : "";
+      html += '<div class="gantt-row">'
+        + '<div class="gantt-label' + (scale === 'day' ? ' gantt-sticky-label' : '') + '" title="' + t.name + '"><span class="wbs">' + t.wbs + '</span>' + t.name + editBtn + '</div>'
+        + '<div class="gantt-track" style="position:relative;' + trackW + '">'
+        + todayLine
+        + '<div class="gantt-bar ' + cls + '" style="left:' + startPct + '%;width:' + widthPct + '%;" title="' + fmtDate(t.start) + ' → ' + fmtDate(t.end) + ' | 進度 ' + t.progress + '%">'
+        + '<div class="gantt-bar-fill" style="width:' + t.progress + '%;"></div>'
+        + '</div>'
+        + '</div>'
+        + '</div>';
+    });
+
+    html += '</div></div>';
+  });
+
+  html += '</div>'; // close gantt-inner
+  document.getElementById("gantt").innerHTML = html;
+}
+
+
+/* =================================================================
+   Task list & Kanban
+================================================================= */
+function populateFilters() {
+  const phaseSel = document.getElementById("filter-phase");
+  const statusSel = document.getElementById("filter-status");
+  const deptSel = document.getElementById("filter-dept");
+  const uniq = (arr) => [...new Set(arr.filter(Boolean))];
+  const phases = uniq(state.tasks.map(t => t.phase));
+  const statuses = uniq(state.tasks.map(t => t.status));
+  const depts = uniq(state.tasks.map(t => t.dept));
+
+  phaseSel.innerHTML = `<option value="">所有階段</option>` + phases.map(p => `<option value="${p}">${p}</option>`).join("");
+  statusSel.innerHTML = `<option value="">所有狀態</option>` + statuses.map(s => `<option value="${s}">${s}</option>`).join("");
+  deptSel.innerHTML = `<option value="">所有部門</option>` + depts.map(d => `<option value="${d}">${d}</option>`).join("");
+
+  ["filter-phase", "filter-status", "filter-dept"].forEach(id => {
+    document.getElementById(id).addEventListener("change", () => {
+      state.filters[id.replace("filter-", "")] = document.getElementById(id).value;
+      renderTaskList();
+      renderKanban();
+    });
+  });
+  document.getElementById("search").addEventListener("input", e => {
+    state.filters.search = e.target.value.toLowerCase();
+    renderTaskList();
+    renderKanban();
+  });
+
+  // sort by click removed (grouped view uses phase grouping)
+
+  document.getElementById("view-table").addEventListener("click", () => switchView("table"));
+  document.getElementById("view-kanban").addEventListener("click", () => switchView("kanban"));
+}
+
+function switchView(v) {
+  state.view = v;
+  document.getElementById("view-table").classList.toggle("active", v === "table");
+  document.getElementById("view-kanban").classList.toggle("active", v === "kanban");
+  document.getElementById("task-table-wrap").classList.toggle("hidden", v !== "table");
+  document.getElementById("kanban").classList.toggle("hidden", v !== "kanban");
+}
+
+function filteredTasks() {
+  const f = state.filters;
+  return state.tasks.filter(t => {
+    if (f.phase && t.phase !== f.phase) return false;
+    if (f.status && t.status !== f.status) return false;
+    if (f.dept && t.dept !== f.dept) return false;
+    if (f.search) {
+      const s = f.search;
+      if (!`${t.wbs} ${t.name} ${t.owner} ${t.dept}`.toLowerCase().includes(s)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTaskList() {
+  let list = filteredTasks();
+  const today = todayMidnight();
+  const container = document.getElementById("task-grouped");
+  if (!list.length) {
+    container.innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-400);">沒有符合條件的任務</div>`;
+    return;
+  }
+
+  // Group by phase
+  const groups = {};
+  const order = [...PHASE_ORDER];
+  list.forEach(t => {
+    const p = t.phase || "未分類";
+    if (!groups[p]) { groups[p] = []; if (!order.includes(p)) order.push(p); }
+    groups[p].push(t);
+  });
+
+  const phases = order.filter(p => groups[p]);
+  const collapseKey = "taskGroupCollapse";
+  if (!state.taskGroupCollapse) state.taskGroupCollapse = {};
+
+  const tableRows = (tasks) => tasks.map(t => {
+    const overdue = t.end && t.end < today && t.progress < 100;
+    const progCls = t.progress >= 100 ? "done" : overdue ? "late" : "";
+    const pri = t.priority === "高" ? "pri-high" : t.priority === "中" ? "pri-mid" : "pri-low";
+    return `<tr>
+      <td><span class="wbs-code">${t.wbs}</span></td>
+      <td class="task-name">${t.name}</td>
+      <td>${t.dept || "—"}</td>
+      <td>${t.owner || "—"}</td>
+      <td><span class="wbs-code">${fmtDate(t.end)}</span></td>
+      <td>
+        <div class="prog-mini">
+          <div class="prog-mini-bar"><div class="prog-mini-fill ${progCls}" style="width:${t.progress}%"></div></div>
+          <span>${t.progress}%</span>
+        </div>
+      </td>
+      <td>${t.status ? `<span class="tag status-${t.status}">${t.status}</span>` : "—"}</td>
+      <td><span class="${pri}">${t.priority || "—"}</span></td>
+    </tr>`;
+  }).join("");
+
+  container.innerHTML = phases.map(p => {
+    const items = groups[p];
+    const isCollapsed = !!state.taskGroupCollapse[p];
+    return `<div class="task-group${isCollapsed ? " collapsed" : ""}" id="tg-${p.replace(/\s/g,"_")}">
+      <div class="task-group-header" onclick="toggleTaskGroup('${p.replace(/'/g,"\'")}')">
+        <svg class="task-group-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        <span class="task-group-title">${p}</span>
+        <span class="task-group-count">${items.length} TASKS</span>
+      </div>
+      <div class="task-group-body">
+        <table class="tasks">
+          <thead><tr>
+            <th>WBS</th><th>任務名稱</th><th>部門</th><th>負責人</th>
+            <th>截止日</th><th>進度</th><th>狀態</th><th>優先級</th>
+          </tr></thead>
+          <tbody>${tableRows(items)}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleTaskGroup(phase) {
+  if (!state.taskGroupCollapse) state.taskGroupCollapse = {};
+  state.taskGroupCollapse[phase] = !state.taskGroupCollapse[phase];
+  renderTaskList();
+}
+
+function renderKanban() {
+  const list = filteredTasks();
+  const html = STATUS_ORDER.map(status => {
+    const items = list.filter(t => t.status === status);
+    return `
+      <div class="kb-col s-${status}">
+        <div class="kb-col-head">
+          <div class="kb-col-title">${status}</div>
+          <div class="kb-col-count">${items.length}</div>
+        </div>
+        ${items.map(t => `
+          <div class="kb-card">
+            <div class="wbs">${t.wbs}</div>
+            <div class="name">${t.name}</div>
+            <div class="foot">
+              <span class="dept">${t.dept || "—"}</span>
+              <span class="prog">${t.progress}% · ${fmtDate(t.end)}</span>
+            </div>
+          </div>
+        `).join("")}
+        ${items.length === 0 ? `<div style="text-align:center;padding:20px;color:var(--ink-300);font-size:11px;">—</div>` : ""}
+      </div>
+    `;
+  }).join("");
+  document.getElementById("kanban").innerHTML = html;
+}
+</script>
+
+<script>
+/* =================================================================
+   Google Sheets OAuth2 + Sync
+   Sheet ID: 1Juo4FegmtBljuW974PyHm7cUC2-PHyyNmCj-M7G2ecI
+================================================================= */
+const SHEET_ID = '1Juo4FegmtBljuW974PyHm7cUC2-PHyyNmCj-M7G2ecI';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const SHEETS_MAP = {
+  wbs:      'WBS 任務',
+  inner:    '內測時程',
+  sample:   '樣機需求',
+  material: '物料備料',
+  cert:     '商檢時程',
+  info:     '專案資訊',
+};
+
+let gAccessToken = null;
+let gUserProfile = null;
+
+/* ── Token client (for Sheets API calls) ── */
+let tokenClient = null;
+
+window.addEventListener('load', () => {
+  // Initialize GIS token client for Sheets API
+  if (typeof google === 'undefined') return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: document.getElementById('g_id_onload')?.dataset.clientId || '',
+    scope: SCOPES,
+    callback: onTokenReceived,
+  });
+
+  // Try restore session from sessionStorage
+  const saved = sessionStorage.getItem('wbs_access_token');
+  const savedUser = sessionStorage.getItem('wbs_user');
+  if (saved && savedUser) {
+    gAccessToken = saved;
+    gUserProfile = JSON.parse(savedUser);
+    onSignedIn();
+  }
+});
+
+/* ── Google One-Tap / Sign-In button callback ── */
+function handleGoogleSignIn(response) {
+  // Decode JWT to get user info
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  gUserProfile = { name: payload.name, email: payload.email, picture: payload.picture };
+  sessionStorage.setItem('wbs_user', JSON.stringify(gUserProfile));
+
+  // Now request access token for Sheets API
+  if (tokenClient) {
+    tokenClient.requestAccessToken({ prompt: '' });
+  }
+}
+
+function onTokenReceived(tokenResponse) {
+  if (tokenResponse.error) {
+    toast('Google 登入失敗: ' + tokenResponse.error, 'error');
+    return;
+  }
+  gAccessToken = tokenResponse.access_token;
+  sessionStorage.setItem('wbs_access_token', gAccessToken);
+  onSignedIn();
+  // Auto-sync after login
+  syncFromSheets();
+}
+
+function onSignedIn() {
+  // Update UI
+  document.getElementById('btn-google-signin').style.display = 'none';
+  document.getElementById('user-pill').style.display = 'flex';
+  document.getElementById('btn-sync-sheets').style.display = '';
+  document.getElementById('btn-upload').style.display = '';
+
+  if (gUserProfile) {
+    document.getElementById('user-name').textContent = gUserProfile.name || gUserProfile.email;
+    if (gUserProfile.picture) {
+      const img = document.getElementById('user-avatar');
+      img.src = gUserProfile.picture;
+      img.style.display = '';
+    }
+  }
+}
+
+function signOut() {
+  if (!confirm('確定要登出嗎？')) return;
+  const tokenToRevoke = gAccessToken;
+  gAccessToken = null;
+  gUserProfile = null;
+  sessionStorage.removeItem('wbs_access_token');
+  sessionStorage.removeItem('wbs_user');
+  document.getElementById('btn-google-signin').style.display = '';
+  document.getElementById('user-pill').style.display = 'none';
+  document.getElementById('btn-sync-sheets').style.display = 'none';
+  document.getElementById('btn-export-excel').style.display = 'none';
+  document.getElementById('btn-upload').style.display = 'none';
+  document.getElementById('dash').classList.remove('active');
+  document.getElementById('empty-state').style.display = '';
+  document.getElementById('empty-title').textContent = '用 Google 帳號登入，\n即時查看專案進度。';
+  if (tokenToRevoke) {
+    google.accounts.oauth2.revoke(tokenToRevoke);
+  }
+  toast('已登出');
+}
+
+/* ── Fetch a sheet as JSON ── */
+async function fetchSheet(sheetName) {
+  if (!gAccessToken) throw new Error('未登入');
+  const encoded = encodeURIComponent(sheetName);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encoded}?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + gAccessToken } });
+  if (res.status === 401) {
+    // Token expired - request new one
+    gAccessToken = null;
+    sessionStorage.removeItem('wbs_access_token');
+    if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
+    throw new Error('Token 已過期，請重新登入');
+  }
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || '讀取失敗');
+  }
+  const data = await res.json();
+  return data.values || [];
+}
+
+/* ── Convert Sheets rows → XLSX-like object for parseWorkbook ── */
+function sheetsToFakeWb(sheetsData) {
+  // Build a fake workbook object compatible with parseWorkbook
+  const fakeWb = { SheetNames: [], Sheets: {} };
+
+  for (const [key, rows] of Object.entries(sheetsData)) {
+    const sheetName = SHEETS_MAP[key] || key;
+    fakeWb.SheetNames.push(sheetName);
+
+    if (!rows || rows.length < 2) {
+      fakeWb.Sheets[sheetName] = {};
+      continue;
+    }
+
+    // Convert to XLSX sheet format using SheetJS aoa_to_sheet
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    fakeWb.Sheets[sheetName] = ws;
+  }
+  return fakeWb;
+}
+
+/* ── Main sync function ── */
+async function syncFromSheets() {
+  if (!gAccessToken) {
+    toast('請先登入 Google 帳號');
+    return;
+  }
+
+  const label = document.getElementById('sync-label');
+  const btn = document.getElementById('btn-sync-sheets');
+  label.textContent = '同步中...';
+  btn.disabled = true;
+
+  try {
+    // Fetch all sheets in parallel
+    const [wbsRows, innerRows, sampleRows, matRows, certRows, infoRows] = await Promise.all([
+      fetchSheet(SHEETS_MAP.wbs),
+      fetchSheet(SHEETS_MAP.inner),
+      fetchSheet(SHEETS_MAP.sample),
+      fetchSheet(SHEETS_MAP.material).catch(() => []),
+      fetchSheet(SHEETS_MAP.cert).catch(() => []),
+      fetchSheet(SHEETS_MAP.info).catch(() => []),
+    ]);
+
+    const fakeWb = sheetsToFakeWb({
+      wbs:      wbsRows,
+      inner:    innerRows,
+      sample:   sampleRows,
+      material: matRows,
+      cert:     certRows,
+      info:     infoRows,
+    });
+
+    parseWorkbook(fakeWb);
+
+    const now = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+    label.textContent = `已同步 ${now}`;
+    toast('✓ 已從 Google Sheets 載入最新資料');
+
+  } catch (err) {
+    console.error(err);
+    toast('同步失敗: ' + err.message, 'error');
+    label.textContent = '同步 Sheets';
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
