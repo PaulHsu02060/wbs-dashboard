@@ -3020,20 +3020,30 @@ window.addEventListener('load', () => {
 
 /* ── Google One-Tap / Sign-In button callback ── */
 function handleGoogleSignIn(response) {
-  // Decode JWT to get user info
-  const payload = JSON.parse(atob(response.credential.split('.')[1]));
-  gUserProfile = { name: payload.name, email: payload.email, picture: payload.picture };
-  sessionStorage.setItem('wbs_user', JSON.stringify(gUserProfile));
+  try {
+    // Decode JWT to get user info
+    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+    gUserProfile = { name: payload.name, email: payload.email, picture: payload.picture };
+    sessionStorage.setItem('wbs_user', JSON.stringify(gUserProfile));
 
-  // Now request access token for Sheets API
-  if (tokenClient) {
-    tokenClient.requestAccessToken({ prompt: '' });
+    // Now request access token for Sheets API
+    if (tokenClient) {
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    } else {
+      // tokenClient not ready, show signed-in state anyway
+      onSignedIn();
+      toast('已登入，但 Sheets API 尚未初始化，請重新整理頁面', 'error');
+    }
+  } catch (err) {
+    console.error('handleGoogleSignIn error:', err);
+    toast('登入處理失敗: ' + err.message, 'error');
   }
 }
 
 function onTokenReceived(tokenResponse) {
   if (tokenResponse.error) {
-    toast('Google 登入失敗: ' + tokenResponse.error, 'error');
+    console.error('Token error:', tokenResponse);
+    toast('Google 授權失敗: ' + tokenResponse.error, 'error');
     return;
   }
   gAccessToken = tokenResponse.access_token;
@@ -3044,11 +3054,12 @@ function onTokenReceived(tokenResponse) {
 }
 
 function onSignedIn() {
-  // Update UI
+  // Update UI - hide login, show user info
   document.getElementById('btn-google-signin').style.display = 'none';
   document.getElementById('user-pill').style.display = 'flex';
   document.getElementById('btn-sync-sheets').style.display = '';
   document.getElementById('btn-upload').style.display = '';
+  document.getElementById('btn-export-excel').style.display = '';
 
   if (gUserProfile) {
     document.getElementById('user-name').textContent = gUserProfile.name || gUserProfile.email;
@@ -3058,6 +3069,10 @@ function onSignedIn() {
       img.style.display = '';
     }
   }
+
+  // Show loading state in empty-state while data loads
+  document.getElementById('empty-title').textContent = '正在載入資料...';
+  document.getElementById('empty-desc').textContent = '正在從 Google Sheets 同步，請稍候。';
 }
 
 function signOut() {
