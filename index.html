@@ -2733,9 +2733,14 @@ function buildGanttSheet() {
   const headerCount = fixedHeaders.length;
 
   const rows = [];
-  // R1: month header
+  // Legend rows
+  rows.push(["■ Gantt 圖表 — 圖例說明", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  rows.push(["■ 已完成 (100%)", "", "▦ 進行中 (0~99%)", "", "▣ 延遲", "", "□ 未開始 (0%)", "", "", "", "", "", "", "", ""]);
+  rows.push(["備註: 每天一欄。前 7 欄為任務基本資訊，第 8 欄起為時間軸；第 1 列顯示月份(每月只在第一天標示)，第 2 列顯示日期數字。任務橫條會在涵蓋的每一天填入對應符號。", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  rows.push([]); // blank row separator
+  // Then the actual data: month header
   rows.push([...new Array(headerCount).fill(""), ...monthRow]);
-  // R2: column headers + day labels
+  // Then column headers + day labels
   rows.push([...fixedHeaders, ...dayRow]);
 
   // Group by phase
@@ -2799,7 +2804,7 @@ function buildGanttSheet() {
     ...cols.map(() => ({wch:3.5})),
   ];
   // Freeze pane: first 7 columns and first 2 header rows
-  ws["!freeze"] = { xSplit: 7, ySplit: 2 };
+  ws["!freeze"] = { xSplit: 7, ySplit: 6 };
   return ws;
 }
 
@@ -4044,8 +4049,8 @@ function onTokenReceived(tokenResponse) {
   gAccessToken = tokenResponse.access_token;
   sessionStorage.setItem('wbs_access_token', gAccessToken);
   onSignedIn();
-  // Auto-sync after login
-  syncFromSheets();
+  // NOTE: do not auto-sync — the Google Sheets file structure may not match the new schema.
+  // User must click "同步 Sheets" manually after confirming the linked Sheet is up to date.
 }
 
 function onSignedIn() {
